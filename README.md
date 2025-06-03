@@ -27,9 +27,3 @@
 
 ---
 
-### 🌐 לפרסום מהיר באינטרנט
-
-ניתן לפרסם את הפרויקט בקלות ב־[GitHub Pages](https://pages.github.com) תחת:
-```
-https://<username>.github.io/<repository>/
-```
