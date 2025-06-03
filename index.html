@@ -1,0 +1,42 @@
+
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>שעות זמניות</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js')
+    .then(reg => console.log('Service Worker registered'))
+    .catch(err => console.log('Service Worker registration failed:', err));
+}
+</script>
+</head>
+<body>
+  <div class="date-bar" id="date-bar">...</div>
+  <div class="container">
+    <div class="time-box right">
+      <h2>השעה הנוכחית</h2>
+      <div id="current-time">--:--:--</div>
+    </div>
+
+    <div class="time-box center">
+      <h2>שעה זמנית</h2>
+      <div id="custom-time">--:--<br><span class="zman-type">--</span></div>
+    </div>
+
+    <div class="time-box left">
+      <h2>זריחה ושקיעה</h2>
+      <div id="sun-times">--</div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/suncalc"></script>
+  <script src="hebrew-date.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

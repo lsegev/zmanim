@@ -1,0 +1,128 @@
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  text-align: center;
+  transition: background 1s ease, color 1s ease;
+}
+
+/* Day Theme */
+body.day {
+  background: linear-gradient(to bottom, #cdeefd, #ffffff);
+  color: #1a1a1a;
+}
+
+/* Night Theme */
+body.night {
+  background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
+  color: #f2f2f2;
+}
+
+.container {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  width: 90%;
+  max-width: 900px;
+  gap: 20px;
+  animation: fadeIn 1.2s ease;
+}
+
+.time-box {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 24px;
+  border-radius: 20px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  transition: background 0.6s ease, color 0.6s ease, transform 0.4s ease;
+  backdrop-filter: blur(6px);
+}
+
+body.night .time-box {
+  background: rgba(0, 0, 0, 0.4);
+  color: #f0f0f0;
+}
+
+.time-box:hover {
+  transform: translateY(-4px);
+}
+
+h2 {
+  margin-bottom: 12px;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+#current-time, #custom-time, #sun-times {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: inherit;
+  transition: all 0.8s ease-in-out;
+}
+
+.zman-type {
+  font-size: 1rem;
+  font-weight: normal;
+  display: block;
+  margin-top: 5px;
+  color: inherit;
+  transition: color 0.6s ease;
+}
+
+.icon {
+  font-size: 1.4rem;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+@media (max-width: 600px) {
+  .container {
+    flex-direction: column;
+    gap: 14px;
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+
+.zman-length {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+
+.date-bar {
+  position: absolute;
+  top: 12px;
+  width: 90%;
+  max-width: 900px;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 500;
+  opacity: 0.85;
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+body.night .date-bar {
+  background: rgba(0, 0, 0, 0.3);
+  color: #f0f0f0;
+}
