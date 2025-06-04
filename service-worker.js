@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zmanim-v1';
+const CACHE_NAME = 'zmanim-v0.1';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
