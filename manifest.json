@@ -1,7 +1,7 @@
 
 {
   "name": "שעות זמניות",
-  "short_name": "זמניות",
+  "short_name": "זמנים",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
