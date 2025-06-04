@@ -67,6 +67,9 @@ if ('serviceWorker' in navigator) {
 </script>
 </head>
 <body>
+  <div id="update-banner" style="display:none;position:fixed;bottom:0;width:100%;background:#ffd700;color:#333;padding:1em;text-align:center;z-index:10000;">
+    יש גרסה חדשה! <button onclick="location.reload(true)" style="margin-right:1em;">רענן עכשיו</button>
+  </div>  
   <div class="menu-toggle">☰</div>
   <div class="refresh-button" onclick="refreshPage()">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -127,6 +130,25 @@ if ('serviceWorker' in navigator) {
       <div id="sun-times">--</div>
     </div>
   </div>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(reg => {
+          reg.onupdatefound = () => {
+            const installingWorker = reg.installing;
+            installingWorker.onstatechange = () => {
+              if (installingWorker.state === 'installed') {
+                if (navigator.serviceWorker.controller) {
+                  document.getElementById('update-banner').style.display = 'block';
+                }
+              }
+            };
+          };
+        });
+    }
+  </script>
+    
 
   <script src="https://unpkg.com/suncalc"></script>
   <script src="hebrew-date.min.js"></script>

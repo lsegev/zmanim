@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zmanim-v0.1';
+const CACHE_NAME = 'zmanim-v0.1.1';
 const ASSETS_TO_CACHE = [
   '/',
   'index.html',
@@ -30,19 +30,15 @@ self.addEventListener('install', (event) => {
 });
 
 // הפעלת Service Worker
-self.addEventListener('activate', (event) => {
+self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
+    caches.keys().then(cacheNames => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
+        cacheNames
+          .filter(name => name !== CACHE_NAME)
+          .map(name => caches.delete(name))
       );
-    }).then(() => {
-      return self.clients.claim();
-    })
+    }).then(() => self.clients.claim())
   );
 });
 
