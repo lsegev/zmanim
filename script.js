@@ -15,9 +15,11 @@ if (navigator.geolocation) {
 }
 
 function tryIPFallback() {
+  console.log('מנסה לקבל מיקום מ-IP...');
   fetch("https://ipapi.co/json/")
     .then(res => res.json())
     .then(data => {
+      console.log('מיקום מ-IP:', data);
       const position = {
         coords: {
           latitude: data.latitude,
@@ -26,7 +28,9 @@ function tryIPFallback() {
       };
       handleLocation(position);
     })
-    .catch(() => {
+    .catch(error => {
+      console.log('שגיאה בקבלת מיקום מ-IP:', error);
+      // מיקום ברירת מחדל - ירושלים
       const defaultPosition = {
         coords: {
           latitude: 31.7683,
@@ -54,9 +58,10 @@ function handleLocation(position) {
   displayZmanitTime(now, times.sunrise, times.sunset, prevTimes.sunset, nextTimes.sunrise);
 }
 
-function handleError() {
-  document.getElementById('sun-times').textContent = 'לא ניתן לאתר מיקום';
-  document.getElementById('custom-time').innerHTML = '--:--<br><span class="zman-type">--</span>';
+function handleError(error) {
+  console.log('שגיאה בקבלת מיקום:', error);
+  // נסה לקבל מיקום מ-IP
+  tryIPFallback();
 }
 
 function displaySunTimes(now, sunrise, sunset) {
