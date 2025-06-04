@@ -165,6 +165,27 @@ function updateDateBar() {
 }
 window.addEventListener('load', updateDateBar);
 
+function initMenu() {
+  const menuToggle = document.querySelector('.menu-toggle');
+  const menuClose = document.querySelector('.menu-close');
+  const sideMenu = document.querySelector('.side-menu');
+  const overlay = document.querySelector('.overlay');
+
+  function toggleMenu() {
+    sideMenu.classList.toggle('active');
+    overlay.classList.toggle('active');
+  }
+
+  window.closeMenu = function() {
+    sideMenu.classList.remove('active');
+    overlay.classList.remove('active');
+  }
+
+  menuToggle.addEventListener('click', toggleMenu);
+  menuClose.addEventListener('click', toggleMenu);
+  overlay.addEventListener('click', toggleMenu);
+}
+
 function init() {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
@@ -187,6 +208,7 @@ function init() {
   updateDateBar();
   updateCurrentTime();
   startLiveUpdates();
+  initMenu();
 }
 
 function startLiveUpdates() {
@@ -205,6 +227,14 @@ function updateAll() {
     const nextTimes = SunCalc.getTimes(nextDay, window.latitude, window.longitude);
     displayZmanitTime(now, window.sunTimes.sunrise, window.sunTimes.sunset, prevTimes.sunset, nextTimes.sunrise);
   }
+}
+
+function refreshPage() {
+  const button = document.querySelector('.refresh-button');
+  button.style.transform = 'rotate(360deg)';
+  setTimeout(() => {
+    window.location.reload();
+  }, 500);
 }
 
 window.onload = init;
