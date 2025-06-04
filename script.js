@@ -1,4 +1,3 @@
-
 function updateCurrentTime() {
   const now = new Date();
   const timeString = now.toLocaleTimeString('he-IL', {
@@ -8,9 +7,6 @@ function updateCurrentTime() {
   });
   document.getElementById('current-time').textContent = timeString;
 }
-
-setInterval(updateCurrentTime, 1000);
-updateCurrentTime();
 
 if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(handleLocation, tryIPFallback);
@@ -43,6 +39,8 @@ function tryIPFallback() {
 
 function handleLocation(position) {
   const { latitude, longitude } = position.coords;
+  window.latitude = latitude;
+  window.longitude = longitude;
   const now = new Date();
 
   const times = SunCalc.getTimes(now, latitude, longitude);
@@ -51,6 +49,7 @@ function handleLocation(position) {
   const prevTimes = SunCalc.getTimes(prevDay, latitude, longitude);
   const nextTimes = SunCalc.getTimes(nextDay, latitude, longitude);
 
+  window.sunTimes = times;
   displaySunTimes(now, times.sunrise, times.sunset);
   displayZmanitTime(now, times.sunrise, times.sunset, prevTimes.sunset, nextTimes.sunrise);
 }
@@ -165,3 +164,47 @@ function updateDateBar() {
   document.getElementById('date-bar').textContent = `${gregorian} | ${hebrew}`;
 }
 window.addEventListener('load', updateDateBar);
+
+function init() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        fetchSunTimes(lat, lon).then(sunTimes => {
+          window.sunTimes = sunTimes;
+          updateCustomTime(sunTimes.sunrise, sunTimes.sunset);
+        });
+      },
+      error => {
+        console.error("שגיאה בקבלת מיקום", error);
+      }
+    );
+  } else {
+    console.error("מיקום גאוגרפי אינו נתמך בדפדפן.");
+  }
+
+  updateDateBar();
+  updateCurrentTime();
+  startLiveUpdates();
+}
+
+function startLiveUpdates() {
+  updateAll();
+  setInterval(updateAll, 1000);
+}
+
+function updateAll() {
+  updateCurrentTime();
+  updateDateBar();
+  if (window.sunTimes) {
+    const now = new Date();
+    const prevDay = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const nextDay = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const prevTimes = SunCalc.getTimes(prevDay, window.latitude, window.longitude);
+    const nextTimes = SunCalc.getTimes(nextDay, window.latitude, window.longitude);
+    displayZmanitTime(now, window.sunTimes.sunrise, window.sunTimes.sunset, prevTimes.sunset, nextTimes.sunrise);
+  }
+}
+
+window.onload = init;
