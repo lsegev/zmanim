@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zmanim-v0.1.1';
+const CACHE_NAME = 'zmanim-v0.1.2';
 const ASSETS_TO_CACHE = [
   '/',
   'index.html',
@@ -16,74 +16,35 @@ const ASSETS_TO_CACHE = [
   'icons/icon-512x512.png'
 ];
 
-// התקנת Service Worker
-self.addEventListener('install', (event) => {
+self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => {
-        return cache.addAll(ASSETS_TO_CACHE);
-      })
-      .then(() => {
-        return self.skipWaiting();
-      })
+      .then(cache => cache.addAll(ASSETS_TO_CACHE))
   );
+  self.skipWaiting();
 });
 
-// הפעלת Service Worker
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames
-          .filter(name => name !== CACHE_NAME)
+    caches.keys().then(cacheNames =>
+      Promise.all(
+        cacheNames.filter(name => name !== CACHE_NAME)
           .map(name => caches.delete(name))
-      );
-    }).then(() => self.clients.claim())
+      )
+    ).then(() => self.clients.claim())
   );
 });
 
-// טיפול בבקשות רשת
-self.addEventListener('fetch', (event) => {
+self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // החזרת תשובה מהמטמון אם קיימת
-        if (response) {
-          return response;
-        }
-
-        // אחרת, נסה לקבל מהשרת
-        return fetch(event.request)
-          .then((response) => {
-            // בדיקה שהתקבלה תשובה תקינה
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-
-            // שכפל את התשובה כי היא יכולה להיות בשימוש רק פעם אחת
-            const responseToCache = response.clone();
-
-            // שמור את התשובה במטמון
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                cache.put(event.request, responseToCache);
-              });
-
-            return response;
-          })
-          .catch(() => {
-            // אם אין חיבור לאינטרנט, נחזיר דף שגיאה מותאם
-            if (event.request.mode === 'navigate') {
-              return caches.match('/offline.html');
-            }
-          });
-      })
+    caches.match(event.request).then(resp => {
+      return resp || fetch(event.request);
+    })
   );
 });
 
-// טיפול בהודעות
-self.addEventListener('message', (event) => {
-  if (event.data.action === 'skipWaiting') {
+self.addEventListener('message', event => {
+  if (event.data && event.data.action === 'skipWaiting') {
     self.skipWaiting();
   }
 });
