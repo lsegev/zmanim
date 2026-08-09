@@ -56,6 +56,21 @@ function handleLocation(position) {
   window.sunTimes = times;
   displaySunTimes(now, times.sunrise, times.sunset);
   displayZmanitTime(now, times.sunrise, times.sunset, prevTimes.sunset, nextTimes.sunrise);
+  updateCityName(latitude, longitude);
+}
+
+function updateCityName(latitude, longitude) {
+  fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=he`)
+    .then(res => res.json())
+    .then(data => {
+      const city = data.city || data.locality || data.principalSubdivision;
+      if (city) {
+        document.getElementById('sun-times-title').textContent = city;
+      }
+    })
+    .catch(error => {
+      console.log('שגיאה בקבלת שם העיר:', error);
+    });
 }
 
 function handleError(error) {
