@@ -38,6 +38,10 @@ const state = {
   sunTimesCache: new Map()
 };
 
+// כיוון המכשיר האמיתי (מעלות מצפון, בכיוון השעון) - null כל עוד לא הופעל מצפן חי
+// או שהדפדפן לא מספק חיישן כיוון מהימן.
+let deviceHeading = null;
+
 function updateCurrentTime() {
   const now = new Date();
   const timeString = now.toLocaleTimeString('he-IL', {
@@ -399,16 +403,98 @@ function bearingToCompassLabel(bearing) {
   return COMPASS_LABELS[index];
 }
 
-function displayCompassCard(latitude, longitude) {
+// מסובבים את החץ כך שיצביע תמיד לכיוון ירושלים: אם יש כיוון מכשיר חי (ממצפן/מגנטומטר),
+// מפצים על הסיבוב של המכשיר עצמו; אחרת מציגים את הזווית הגיאוגרפית הסטטית בלבד.
+function updateCompassNeedle() {
   const arrow = document.getElementById('compass-arrow');
+  if (!arrow || state.latitude === null || state.longitude === null) return;
+
+  const bearing = getJerusalemBearing(state.latitude, state.longitude);
+  const rotation = deviceHeading === null ? bearing : (bearing - deviceHeading + 360) % 360;
+  arrow.style.transform = `rotate(${rotation}deg)`;
+}
+
+function displayCompassCard(latitude, longitude) {
   const degreesEl = document.getElementById('compass-degrees');
   const labelEl = document.getElementById('compass-label');
-  if (!arrow || !degreesEl || !labelEl) return;
+  if (!degreesEl || !labelEl) return;
 
   const bearing = getJerusalemBearing(latitude, longitude);
-  arrow.style.transform = `rotate(${bearing}deg)`;
   degreesEl.textContent = `${Math.round(bearing)}°`;
   labelEl.textContent = bearingToCompassLabel(bearing);
+  updateCompassNeedle();
+}
+
+function supportsDeviceOrientation() {
+  return typeof window !== 'undefined' && 'DeviceOrientationEvent' in window;
+}
+
+// ב-iOS (Safari) requestPermission חייב להיקרא ישירות בתגובה למחוות משתמש (לחיצה),
+// ולכן אי אפשר להפעיל את המצפן החי אוטומטית בטעינת הדף.
+function needsOrientationPermission() {
+  return supportsDeviceOrientation() && typeof DeviceOrientationEvent.requestPermission === 'function';
+}
+
+function setCompassStatus(text) {
+  const statusEl = document.getElementById('compass-live-status');
+  if (statusEl) statusEl.textContent = text;
+}
+
+function handleOrientationEvent(event) {
+  let heading = null;
+
+  if (typeof event.webkitCompassHeading === 'number' && !Number.isNaN(event.webkitCompassHeading)) {
+    // iOS Safari: כיוון מצפן מגנטי אמיתי, כבר מחושב יחסית לצפון.
+    heading = event.webkitCompassHeading;
+  } else if (event.absolute && typeof event.alpha === 'number') {
+    // Android/Chrome: alpha=0 פונה צפון, וגדל נגד כיוון השעון - לכן הופכים.
+    heading = 360 - event.alpha;
+  } else {
+    // אין נתון כיוון מהימן ביחס לצפון אמיתי (לדוגמה alpha יחסי בלבד) - מתעלמים.
+    return;
+  }
+
+  deviceHeading = ((heading % 360) + 360) % 360;
+  updateCompassNeedle();
+}
+
+function startLiveCompass() {
+  window.addEventListener('deviceorientationabsolute', handleOrientationEvent);
+  window.addEventListener('deviceorientation', handleOrientationEvent);
+
+  setCompassStatus('מצפן חי פעיל 🟢');
+  const hint = document.getElementById('compass-hint');
+  if (hint) hint.textContent = 'החץ עוקב אחרי כיוון המכשיר בזמן אמת - סובבו את הטלפון עד שהחץ יצביע כלפי מעלה';
+  const button = document.getElementById('compass-live-toggle');
+  if (button) button.hidden = true;
+}
+
+function initCompassLiveToggle() {
+  const button = document.getElementById('compass-live-toggle');
+  if (!button) return;
+
+  if (!supportsDeviceOrientation()) {
+    button.hidden = true;
+    return;
+  }
+
+  button.addEventListener('click', () => {
+    if (needsOrientationPermission()) {
+      DeviceOrientationEvent.requestPermission()
+        .then(response => {
+          if (response === 'granted') {
+            startLiveCompass();
+          } else {
+            setCompassStatus('ההרשאה לחיישן הכיוון נדחתה - מוצג כיוון גיאוגרפי בלבד');
+          }
+        })
+        .catch(() => {
+          setCompassStatus('לא ניתן להפעיל את חיישן הכיוון במכשיר הזה');
+        });
+    } else {
+      startLiveCompass();
+    }
+  });
 }
 
 // העומר משתנה בשקיעה ולא בחצות - ה-Intl Hebrew calendar מחשב תאריך עברי לפי חצות
@@ -600,6 +686,7 @@ function init() {
   startLiveUpdates();
   initMenu();
   initRefreshButton();
+  initCompassLiveToggle();
   requestLocation();
 }
 
