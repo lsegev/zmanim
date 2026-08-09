@@ -70,8 +70,8 @@ function updateCityName(latitude, longitude) {
     .then(res => res.json())
     .then(data => {
       const address = data.address || {};
-      const city = address.hamlet || address.village || address.suburb
-        || address.town || address.municipality || address.city;
+      const city = address.city || address.town || address.municipality
+        || address.village || address.hamlet;
       if (city) {
         setCityTitle(city);
       } else {
