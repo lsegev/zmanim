@@ -1,6 +1,12 @@
+/* גופני מערכת בלבד: אין טעינת גופנים מ-CDN חיצוני, כך שה-CSP נשאר הדוק
+   ואין דליפה של כתובות IP של המשתמשים לצד שלישי. */
+:root {
+  --app-font: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+}
+
 body {
   margin: 0;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--app-font);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -168,7 +174,9 @@ body.night .menu-toggle {
     z-index: 1000;
     transition: right 0.3s ease;
     box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-    font-family: 'Inter', sans-serif;
+    font-family: var(--app-font);
+    display: flex;
+    flex-direction: column;
 }
 
 body.night .side-menu {
@@ -231,6 +239,74 @@ body.night .menu-close:hover {
 .menu-content {
     padding: 24px;
     text-align: right;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* דפים שטרם נבנו */
+.menu-item.soon a {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.menu-item.soon a:hover {
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.menu-badge {
+    font-size: 0.75em;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.08);
+    white-space: nowrap;
+}
+
+body.night .menu-badge {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.menu-note {
+    margin: auto 0 0;
+    padding-top: 16px;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    opacity: 0.7;
+}
+
+/* באנר עדכון גרסה */
+.update-banner {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background: #ffd700;
+    color: #333;
+    padding: 1em;
+    text-align: center;
+    z-index: 10000;
+    box-sizing: border-box;
+}
+
+.update-banner[hidden] {
+    display: none;
+}
+
+.update-banner button {
+    margin-right: 1em;
+    font: inherit;
+    padding: 0.3em 1em;
+    border: none;
+    border-radius: 8px;
+    background: #333;
+    color: #fff;
+    cursor: pointer;
+}
+
+.update-banner button:disabled {
+    opacity: 0.6;
+    cursor: default;
 }
 
 .overlay {
