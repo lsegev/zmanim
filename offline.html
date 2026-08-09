@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- דף עצמאי לחלוטין: אין סקריפטים ואין משאבים חיצוניים כלשהם. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
     <title>לא מחובר לאינטרנט - זמנים</title>
     <style>
         body {
@@ -46,6 +48,8 @@
         }
 
         .retry-button {
+            display: inline-block;
+            text-decoration: none;
             background: #3498db;
             color: white;
             border: none;
@@ -81,7 +85,7 @@
         <div class="icon">📡</div>
         <h1>אין חיבור לאינטרנט</h1>
         <p>נראה שאין לך חיבור לאינטרנט כרגע. אנא בדוק את החיבור שלך ונסה שוב.</p>
-        <button class="retry-button" onclick="window.location.reload()">נסה שוב</button>
+        <a class="retry-button" href="./">נסה שוב</a>
     </div>
 </body>
 </html> 

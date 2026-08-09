@@ -3,6 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!--
+    Content-Security-Policy: GitHub Pages אינו מאפשר להגדיר headers, ולכן המדיניות
+    מוגדרת כאן. אין 'unsafe-inline' - כל ה-JS וה-CSS נמצאים בקבצים חיצוניים.
+    connect-src מוגבל לשלושת שירותי המיקום שהאפליקציה באמת פונה אליהם.
+  -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self';
+    style-src 'self';
+    img-src 'self' data:;
+    font-src 'self';
+    manifest-src 'self';
+    connect-src 'self' https://nominatim.openstreetmap.org https://api.bigdatacloud.net https://ipapi.co;
+    base-uri 'none';
+    form-action 'none';
+    object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
   <meta name="theme-color" content="#ffffff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -36,42 +55,16 @@
   <link rel="canonical" href="https://lsegev.github.io/zmanim/">
 
   <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js')
-      .then(registration => {
-        console.log('ServiceWorker registration successful');
-        
-        // בדיקת עדכונים
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-          
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // יש עדכון חדש זמין
-              if (confirm('יש עדכון חדש זמין. האם ברצונך לעדכן עכשיו?')) {
-                newWorker.postMessage({ action: 'skipWaiting' });
-                window.location.reload();
-              }
-            }
-          });
-        });
-      })
-      .catch(err => {
-        console.log('ServiceWorker registration failed: ', err);
-      });
-  });
-}
-</script>
+  <script src="app-init.js"></script>
 </head>
-<body>
-  <div id="update-banner" style="display:none;position:fixed;bottom:0;width:100%;background:#ffd700;color:#333;padding:1em;text-align:center;z-index:10000;">
-    יש גרסה חדשה! <button onclick="location.reload(true)" style="margin-right:1em;">רענן עכשיו</button>
-  </div>  
+<!-- ברירת מחדל "day" כדי שתמיד יהיה רקע תקין, גם לפני שהמיקום מתקבל
+     וגם במקומות שבהם אין זריחה/שקיעה (קווי רוחב קוטביים). -->
+<body class="day">
+  <div id="update-banner" class="update-banner" hidden>
+    יש גרסה חדשה! <button id="update-button" type="button">רענן עכשיו</button>
+  </div>
   <div class="menu-toggle">☰</div>
-  <div class="refresh-button" onclick="refreshPage()">
+  <div class="refresh-button">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M23 4v6h-6"/>
       <path d="M1 20v-6h6"/>
@@ -86,30 +79,37 @@ if ('serviceWorker' in navigator) {
     <nav class="menu-content">
       <ul class="menu-list">
         <li class="menu-item active">
-          <a href="#" onclick="closeMenu()">
+          <a href="./">
             <span class="menu-icon">🏠</span>
             <span class="menu-text">דף הבית</span>
           </a>
         </li>
-        <li class="menu-item">
-          <a href="/shabbat">
+        <li class="menu-item soon">
+          <a href="./shabbat/" aria-disabled="true">
             <span class="menu-icon">🕯️</span>
             <span class="menu-text">זמני שבת</span>
+            <span class="menu-badge">בקרוב</span>
           </a>
         </li>
-        <li class="menu-item">
-          <a href="/important-dates">
+        <li class="menu-item soon">
+          <a href="./important-dates/" aria-disabled="true">
             <span class="menu-icon">📅</span>
             <span class="menu-text">תאריכים חשובים השבוע</span>
+            <span class="menu-badge">בקרוב</span>
           </a>
         </li>
-        <li class="menu-item">
-          <a href="/daily-study">
+        <li class="menu-item soon">
+          <a href="./daily-study/" aria-disabled="true">
             <span class="menu-icon">📚</span>
             <span class="menu-text">לימוד יומי</span>
+            <span class="menu-badge">בקרוב</span>
           </a>
         </li>
       </ul>
+      <p class="menu-note">
+        המיקום שלך משמש לחישוב זמני היום בלבד ונשלח לשירותי זיהוי מיקום חיצוניים
+        בדיוק מעוגל של כ-100 מטר. הוא אינו נשמר בשרת כלשהו.
+      </p>
     </nav>
   </div>
   <div class="overlay"></div>
@@ -131,31 +131,9 @@ if ('serviceWorker' in navigator) {
     </div>
   </div>
 
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js').then(reg => {
-        reg.onupdatefound = () => {
-          const installingWorker = reg.installing;
-          installingWorker.onstatechange = () => {
-            if (installingWorker.state === 'installed') {
-              if (navigator.serviceWorker.controller) {
-                document.getElementById('update-banner').style.display = 'block';
-                reg.waiting && reg.waiting.postMessage({ action: 'skipWaiting' });
-              }
-            }
-          };
-        };
-      });
-  
-      navigator.serviceWorker.addEventListener('controllerchange', function () {
-        window.location.reload();
-      });
-    }
-    </script>
-    
-
-  <script src="https://unpkg.com/suncalc"></script>
-  <script src="hebrew-date.min.js"></script>
+  <!-- SunCalc 1.9.0 (MIT) מוגש מהמקור עצמו: אין תלות ב-CDN חיצוני שיכול להתחלף
+       תחת אותה כתובת, והספרייה זמינה גם offline. ראה vendor/suncalc-LICENSE.txt -->
+  <script src="vendor/suncalc.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
