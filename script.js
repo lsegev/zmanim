@@ -3,16 +3,8 @@
 // מיקום ברירת מחדל - ירושלים (בשימוש כשאין הרשאת מיקום ואין זיהוי לפי IP)
 const DEFAULT_POSITION = { latitude: 31.7683, longitude: 35.2137 };
 
-// הר הבית - נקודת היעד לחישוב כיוון התפילה
-const JERUSALEM_POSITION = { latitude: 31.7767, longitude: 35.2345 };
-
-// 16 כיווני מצפן, בסדר עולה מצפון (0 מעלות) עם כיוון השעון
-const COMPASS_LABELS = [
-  'צפון', 'צפון-צפון-מזרח', 'צפון-מזרח', 'מזרח-צפון-מזרח',
-  'מזרח', 'מזרח-דרום-מזרח', 'דרום-מזרח', 'דרום-דרום-מזרח',
-  'דרום', 'דרום-דרום-מערב', 'דרום-מערב', 'מערב-דרום-מערב',
-  'מערב', 'מערב-צפון-מערב', 'צפון-מערב', 'צפון-צפון-מערב'
-];
+// כותל המערבי - נקודת היעד לחישוב כיוון התפילה (לא ירושלים באופן כללי)
+const WESTERN_WALL_POSITION = { latitude: 31.776930, longitude: 35.234524 };
 
 // מזהי הקוביות ההלכתיות המבוססות על שעה זמנית (לצורך ניקוי בזמן שאין זריחה/שקיעה)
 const DAILY_ZMAN_IDS = [
@@ -37,6 +29,10 @@ const state = {
   // אוטומטית בחצות ואינו "נתקע" על התמונה שהתקבלה בטעינת הדף.
   sunTimesCache: new Map()
 };
+
+// כיוון המכשיר האמיתי (מעלות מצפון, בכיוון השעון) - null כל עוד לא הופעל מצפן חי
+// או שהדפדפן לא מספק חיישן כיוון מהימן.
+let deviceHeading = null;
 
 function updateCurrentTime() {
   const now = new Date();
@@ -330,16 +326,17 @@ function displayZmanCard(id, date, now) {
 }
 
 // זמנים הלכתיים המבוססים על שעה זמנית של היום (שיטת הגר"א - זריחה עד שקיעה),
-// בהתאם לחישוב הקיים ל"שעה זמנית" ביום. עלות השחר ומשיכיר מחושבים בדקות קבועות
-// לפני הזריחה (שיטה נפוצה), ולא בשעות זמניות.
+// בהתאם לחישוב הקיים ל"שעה זמנית" ביום. עלות השחר ומשיכיר מחושבים ב"דקות זמניות"
+// (יחסיות לאורך היום), לא בדקות קבועות - 72 דקות זמניות = 72/60 = 1.2 שעות זמניות
+// ("שעה וחמישית"), ושוות לדקות קבועות רק בשוויון יום ולילה (equinox).
 function computeDailyZmanim(sunrise, sunset) {
   if (!isValidDate(sunrise) || !isValidDate(sunset) || sunset <= sunrise) return null;
 
   const shaaZmanitMs = (sunset - sunrise) / 12;
 
   return {
-    alotHashachar: new Date(sunrise.getTime() - 72 * 60000),
-    misheyakir: new Date(sunrise.getTime() - 50 * 60000),
+    alotHashachar: new Date(sunrise.getTime() - 1.2 * shaaZmanitMs),
+    misheyakir: new Date(sunrise.getTime() - (5 / 6) * shaaZmanitMs),
     sofZmanShema: new Date(sunrise.getTime() + 3 * shaaZmanitMs),
     sofZmanTefila: new Date(sunrise.getTime() + 4 * shaaZmanitMs),
     minchaGedola: new Date(sunrise.getTime() + 6.5 * shaaZmanitMs),
@@ -380,11 +377,11 @@ function displayDailyZmanim(now, times, prevTimes, nextTimes) {
 function toRad(deg) { return deg * Math.PI / 180; }
 function toDeg(rad) { return rad * 180 / Math.PI; }
 
-// זווית (bearing) גיאוגרפית ראשונית ממיקום נתון לירושלים, על פני מעגל גדול (great circle).
-function getJerusalemBearing(latitude, longitude) {
+// זווית (bearing) גיאוגרפית ראשונית ממיקום נתון לכותל המערבי, על פני מעגל גדול (great circle).
+function getWesternWallBearing(latitude, longitude) {
   const phi1 = toRad(latitude);
-  const phi2 = toRad(JERUSALEM_POSITION.latitude);
-  const deltaLambda = toRad(JERUSALEM_POSITION.longitude - longitude);
+  const phi2 = toRad(WESTERN_WALL_POSITION.latitude);
+  const deltaLambda = toRad(WESTERN_WALL_POSITION.longitude - longitude);
 
   const theta = Math.atan2(
     Math.sin(deltaLambda) * Math.cos(phi2),
@@ -394,21 +391,96 @@ function getJerusalemBearing(latitude, longitude) {
   return (toDeg(theta) + 360) % 360;
 }
 
-function bearingToCompassLabel(bearing) {
-  const index = Math.round(bearing / 22.5) % COMPASS_LABELS.length;
-  return COMPASS_LABELS[index];
+// מסובבים את החץ כך שיצביע תמיד לכיוון הכותל המערבי: אם יש כיוון מכשיר חי (ממצפן/מגנטומטר),
+// מפצים על הסיבוב של המכשיר עצמו; אחרת מציגים את הזווית הגיאוגרפית הסטטית בלבד.
+function updateCompassNeedle() {
+  const arrow = document.getElementById('compass-arrow');
+  if (!arrow || state.latitude === null || state.longitude === null) return;
+
+  const bearing = getWesternWallBearing(state.latitude, state.longitude);
+  const rotation = deviceHeading === null ? bearing : (bearing - deviceHeading + 360) % 360;
+  arrow.style.transform = `rotate(${rotation}deg)`;
 }
 
 function displayCompassCard(latitude, longitude) {
-  const arrow = document.getElementById('compass-arrow');
   const degreesEl = document.getElementById('compass-degrees');
-  const labelEl = document.getElementById('compass-label');
-  if (!arrow || !degreesEl || !labelEl) return;
+  if (!degreesEl) return;
 
-  const bearing = getJerusalemBearing(latitude, longitude);
-  arrow.style.transform = `rotate(${bearing}deg)`;
-  degreesEl.textContent = `${Math.round(bearing)}°`;
-  labelEl.textContent = bearingToCompassLabel(bearing);
+  const bearing = getWesternWallBearing(latitude, longitude);
+  degreesEl.textContent = `${bearing.toFixed(1)}°`;
+  updateCompassNeedle();
+}
+
+function supportsDeviceOrientation() {
+  return typeof window !== 'undefined' && 'DeviceOrientationEvent' in window;
+}
+
+// ב-iOS (Safari) requestPermission חייב להיקרא ישירות בתגובה למחוות משתמש (לחיצה),
+// ולכן אי אפשר להפעיל את המצפן החי אוטומטית בטעינת הדף.
+function needsOrientationPermission() {
+  return supportsDeviceOrientation() && typeof DeviceOrientationEvent.requestPermission === 'function';
+}
+
+function setCompassStatus(text) {
+  const statusEl = document.getElementById('compass-live-status');
+  if (statusEl) statusEl.textContent = text;
+}
+
+function handleOrientationEvent(event) {
+  let heading = null;
+
+  if (typeof event.webkitCompassHeading === 'number' && !Number.isNaN(event.webkitCompassHeading)) {
+    // iOS Safari: כיוון מצפן מגנטי אמיתי, כבר מחושב יחסית לצפון.
+    heading = event.webkitCompassHeading;
+  } else if (event.absolute && typeof event.alpha === 'number') {
+    // Android/Chrome: alpha=0 פונה צפון, וגדל נגד כיוון השעון - לכן הופכים.
+    heading = 360 - event.alpha;
+  } else {
+    // אין נתון כיוון מהימן ביחס לצפון אמיתי (לדוגמה alpha יחסי בלבד) - מתעלמים.
+    return;
+  }
+
+  deviceHeading = ((heading % 360) + 360) % 360;
+  updateCompassNeedle();
+}
+
+function startLiveCompass() {
+  window.addEventListener('deviceorientationabsolute', handleOrientationEvent);
+  window.addEventListener('deviceorientation', handleOrientationEvent);
+
+  setCompassStatus('מצפן חי פעיל 🟢');
+  const hint = document.getElementById('compass-hint');
+  if (hint) hint.textContent = 'החץ עוקב אחרי כיוון המכשיר בזמן אמת - סובבו את הטלפון עד שהחץ יצביע כלפי מעלה';
+  const button = document.getElementById('compass-live-toggle');
+  if (button) button.hidden = true;
+}
+
+function initCompassLiveToggle() {
+  const button = document.getElementById('compass-live-toggle');
+  if (!button) return;
+
+  if (!supportsDeviceOrientation()) {
+    button.hidden = true;
+    return;
+  }
+
+  button.addEventListener('click', () => {
+    if (needsOrientationPermission()) {
+      DeviceOrientationEvent.requestPermission()
+        .then(response => {
+          if (response === 'granted') {
+            startLiveCompass();
+          } else {
+            setCompassStatus('ההרשאה לחיישן הכיוון נדחתה - מוצג כיוון גיאוגרפי בלבד');
+          }
+        })
+        .catch(() => {
+          setCompassStatus('לא ניתן להפעיל את חיישן הכיוון במכשיר הזה');
+        });
+    } else {
+      startLiveCompass();
+    }
+  });
 }
 
 // העומר משתנה בשקיעה ולא בחצות - ה-Intl Hebrew calendar מחשב תאריך עברי לפי חצות
@@ -600,6 +672,7 @@ function init() {
   startLiveUpdates();
   initMenu();
   initRefreshButton();
+  initCompassLiveToggle();
   requestLocation();
 }
 

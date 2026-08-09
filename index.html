@@ -137,12 +137,12 @@
       <div class="zman-card">
         <h4><span class="icon">🌅</span>עלות השחר</h4>
         <div id="alot-hashachar">--:--</div>
-        <span class="zman-note">72 דק' לפני הנץ</span>
+        <span class="zman-note">72 דק' זמניות (שעה וחמישית) לפני הנץ</span>
       </div>
       <div class="zman-card">
         <h4><span class="icon">👁️</span>משיכיר</h4>
         <div id="misheyakir">--:--</div>
-        <span class="zman-note">50 דק' לפני הנץ</span>
+        <span class="zman-note">50 דק' זמניות לפני הנץ</span>
       </div>
       <div class="zman-card">
         <h4><span class="icon">📖</span>סוף זמן ק"ש</h4>
@@ -198,10 +198,12 @@
       </svg>
       <div class="compass-info">
         <div id="compass-degrees">--°</div>
-        <span id="compass-label" class="zman-note">--</span>
+        <span class="zman-note">לכיוון הכותל המערבי</span>
+        <button id="compass-live-toggle" type="button" class="compass-live-button">🧭 הפעלת מצפן חי</button>
+        <span id="compass-live-status" class="zman-note"></span>
       </div>
     </div>
-    <p class="zman-hint">הכיוון הגיאוגרפי לירושלים - יש להצמיד למצפן אמיתי לכיוון מדויק</p>
+    <p class="zman-hint" id="compass-hint">הכיוון הגיאוגרפי המדויק לכותל המערבי בירושלים - יש להצמיד למצפן אמיתי לכיוון מדויק, או ללחוץ על "הפעלת מצפן חי"</p>
   </section>
 
   <!-- SunCalc 1.9.0 (MIT) מוגש מהמקור עצמו: אין תלות ב-CDN חיצוני שיכול להתחלף
