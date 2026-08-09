@@ -8,9 +8,12 @@ body {
   margin: 0;
   font-family: var(--app-font);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 100vh;
+  min-height: 100vh;
+  gap: 28px;
+  padding: 90px 16px 48px;
+  box-sizing: border-box;
   text-align: center;
   transition: background 1s ease, color 1s ease;
 }
@@ -56,6 +59,27 @@ body.night .time-box {
   transform: translateY(-4px);
 }
 
+/* "שעה זמנית" נשארת האלמנט הכי בולט במסך - קוביה גדולה יותר עם זוהר עדין */
+.time-box.center {
+  flex: 1.35;
+  padding: 32px 24px;
+  box-shadow: 0 8px 26px rgba(255, 190, 60, 0.3), 0 6px 18px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 190, 60, 0.35);
+}
+
+body.night .time-box.center {
+  box-shadow: 0 8px 26px rgba(120, 170, 255, 0.28), 0 6px 18px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(120, 170, 255, 0.3);
+}
+
+.time-box.center h2 {
+  font-size: 1.5rem;
+}
+
+.time-box.center #custom-time {
+  font-size: 2.6rem;
+}
+
 h2 {
   margin-bottom: 12px;
   font-size: 1.3rem;
@@ -89,6 +113,11 @@ h2 {
     flex-direction: column;
     gap: 14px;
   }
+
+  /* בפריסת עמודה - שעה זמנית תמיד ראשונה, בהתאם לבולטות שלה */
+  .time-box.center {
+    order: -1;
+  }
 }
 
 @keyframes fadeIn {
@@ -108,6 +137,188 @@ h2 {
   margin-top: 4px;
   font-size: 0.9rem;
   opacity: 0.7;
+}
+
+/* סקציות זמני היום הנוספות מתחת לשורה הראשית */
+.zman-section {
+  width: 90%;
+  max-width: 900px;
+  animation: fadeIn 1.2s ease;
+}
+
+.zman-section-title {
+  margin: 0 0 12px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  text-align: right;
+  opacity: 0.9;
+}
+
+.zman-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+}
+
+.zman-card {
+  background: rgba(255, 255, 255, 0.7);
+  padding: 16px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(6px);
+  transition: background 0.6s ease, color 0.6s ease, opacity 0.4s ease;
+}
+
+body.night .zman-card {
+  background: rgba(0, 0, 0, 0.35);
+  color: #f0f0f0;
+}
+
+/* זמן שכבר עבר היום - מעומעם כדי שיהיה קל לראות מה עוד נותר */
+.zman-card.past {
+  opacity: 0.45;
+}
+
+.zman-card h4 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.zman-card h4 .icon {
+  font-size: 1.1rem;
+}
+
+.zman-card > div {
+  font-size: 1.3rem;
+  font-weight: bold;
+}
+
+.zman-note {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
+
+.zman-hint {
+  margin: 10px 0 0;
+  font-size: 0.8rem;
+  opacity: 0.65;
+}
+
+.omer-card {
+  background: rgba(255, 255, 255, 0.7);
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(6px);
+}
+
+body.night .omer-card {
+  background: rgba(0, 0, 0, 0.35);
+  color: #f0f0f0;
+}
+
+#omer-count {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.compass-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(6px);
+}
+
+body.night .compass-card {
+  background: rgba(0, 0, 0, 0.35);
+  color: #f0f0f0;
+}
+
+.compass {
+  width: 90px;
+  height: 90px;
+  flex-shrink: 0;
+}
+
+.compass-ring {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  opacity: 0.35;
+}
+
+.compass-north-label {
+  font-size: 10px;
+  fill: currentColor;
+  text-anchor: middle;
+  opacity: 0.6;
+}
+
+.compass-needle {
+  fill: #e74c3c;
+  transform-origin: 50px 50px;
+  transition: transform 0.6s ease;
+}
+
+.compass-info {
+  text-align: right;
+}
+
+#compass-degrees {
+  font-size: 1.6rem;
+  font-weight: bold;
+}
+
+@media (max-width: 600px) {
+  .zman-section-title {
+    text-align: center;
+  }
+
+  .compass-card {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .compass-info {
+    text-align: center;
+  }
+}
+
+/* מסכים צרים - כותרות הקוביות מצטמצמות כדי לצמצם שבירת שורות מיותרת */
+@media (max-width: 420px) {
+  .zman-grid {
+    gap: 10px;
+  }
+
+  .zman-card {
+    padding: 12px 10px;
+  }
+
+  .zman-card h4 {
+    font-size: 0.82rem;
+    gap: 4px;
+  }
+
+  .zman-card h4 .icon {
+    font-size: 1rem;
+    margin-right: 0;
+  }
+
+  .zman-card > div {
+    font-size: 1.15rem;
+  }
 }
 
 
@@ -496,6 +707,12 @@ body.night .refresh-button:hover {
         top: 70px;
         width: calc(100% - 32px);
         margin: 0 16px;
+    }
+
+    /* ה-date-bar זז למטה בנייד (כדי לפנות מקום לכפתורים), אז צריך עוד ריפוד
+       עליון כדי שהקוביה הראשונה לא תיחתך מתחתיו. */
+    body {
+        padding-top: 128px;
     }
 
     .menu-toggle {
