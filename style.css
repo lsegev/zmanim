@@ -296,6 +296,31 @@ body.night .compass-card {
   }
 }
 
+/* מסכים צרים - כותרות הקוביות מצטמצמות כדי לצמצם שבירת שורות מיותרת */
+@media (max-width: 420px) {
+  .zman-grid {
+    gap: 10px;
+  }
+
+  .zman-card {
+    padding: 12px 10px;
+  }
+
+  .zman-card h4 {
+    font-size: 0.82rem;
+    gap: 4px;
+  }
+
+  .zman-card h4 .icon {
+    font-size: 1rem;
+    margin-right: 0;
+  }
+
+  .zman-card > div {
+    font-size: 1.15rem;
+  }
+}
+
 
 .date-bar {
   position: absolute;
@@ -682,6 +707,12 @@ body.night .refresh-button:hover {
         top: 70px;
         width: calc(100% - 32px);
         margin: 0 16px;
+    }
+
+    /* ה-date-bar זז למטה בנייד (כדי לפנות מקום לכפתורים), אז צריך עוד ריפוד
+       עליון כדי שהקוביה הראשונה לא תיחתך מתחתיו. */
+    body {
+        padding-top: 128px;
     }
 
     .menu-toggle {
