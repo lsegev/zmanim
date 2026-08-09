@@ -259,13 +259,6 @@ body.night .compass-card {
   opacity: 0.35;
 }
 
-.compass-north-label {
-  font-size: 10px;
-  fill: currentColor;
-  text-anchor: middle;
-  opacity: 0.6;
-}
-
 .compass-needle {
   fill: #e74c3c;
   transform-origin: 50px 50px;
