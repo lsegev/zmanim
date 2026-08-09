@@ -59,13 +59,38 @@ function handleLocation(position) {
   updateCityName(latitude, longitude);
 }
 
+function setCityTitle(city) {
+  document.getElementById('sun-times-title').innerHTML = `<span class="icon">📍</span>${city}`;
+}
+
 function updateCityName(latitude, longitude) {
+  // Nominatim (OSM) מדויק יותר מ-BigDataCloud עבור יישובים קטנים,
+  // כולל בשטחי יהודה ושומרון שלא תמיד מקבלים שם עיר נכון ב-BigDataCloud.
+  fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&accept-language=he&zoom=16`)
+    .then(res => res.json())
+    .then(data => {
+      const address = data.address || {};
+      const city = address.hamlet || address.village || address.suburb
+        || address.town || address.municipality || address.city;
+      if (city) {
+        setCityTitle(city);
+      } else {
+        updateCityNameFallback(latitude, longitude);
+      }
+    })
+    .catch(error => {
+      console.log('שגיאה בקבלת שם העיר מ-Nominatim:', error);
+      updateCityNameFallback(latitude, longitude);
+    });
+}
+
+function updateCityNameFallback(latitude, longitude) {
   fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=he`)
     .then(res => res.json())
     .then(data => {
       const city = data.city || data.locality || data.principalSubdivision;
       if (city) {
-        document.getElementById('sun-times-title').textContent = city;
+        setCityTitle(city);
       }
     })
     .catch(error => {
