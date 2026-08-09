@@ -628,7 +628,19 @@ function initRefreshButton() {
   const button = document.querySelector('.refresh-button');
   button.addEventListener('click', () => {
     button.style.transform = 'rotate(360deg)';
-    setTimeout(() => window.location.reload(), 500);
+
+    // מנקים את כל מטמוני ה-Service Worker לפני הרענון, כדי שהכפתור תמיד יביא
+    // גרסה טרייה של כל הקבצים - גם script.js/style.css, שמוגשים כרגיל לפי
+    // stale-while-revalidate ובלי ניקוי היו מתעדכנים בפועל רק ברענון שני.
+    const clearCaches = 'caches' in window
+      ? caches.keys().then(names => Promise.all(names.map(name => caches.delete(name))))
+      : Promise.resolve();
+
+    clearCaches
+      .catch(() => {})
+      .then(() => {
+        setTimeout(() => window.location.reload(), 500);
+      });
   });
 }
 
