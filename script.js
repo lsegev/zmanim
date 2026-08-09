@@ -3,6 +3,23 @@
 // מיקום ברירת מחדל - ירושלים (בשימוש כשאין הרשאת מיקום ואין זיהוי לפי IP)
 const DEFAULT_POSITION = { latitude: 31.7683, longitude: 35.2137 };
 
+// הר הבית - נקודת היעד לחישוב כיוון התפילה
+const JERUSALEM_POSITION = { latitude: 31.7767, longitude: 35.2345 };
+
+// 16 כיווני מצפן, בסדר עולה מצפון (0 מעלות) עם כיוון השעון
+const COMPASS_LABELS = [
+  'צפון', 'צפון-צפון-מזרח', 'צפון-מזרח', 'מזרח-צפון-מזרח',
+  'מזרח', 'מזרח-דרום-מזרח', 'דרום-מזרח', 'דרום-דרום-מזרח',
+  'דרום', 'דרום-דרום-מערב', 'דרום-מערב', 'מערב-דרום-מערב',
+  'מערב', 'מערב-צפון-מערב', 'צפון-מערב', 'צפון-צפון-מערב'
+];
+
+// מזהי הקוביות ההלכתיות המבוססות על שעה זמנית (לצורך ניקוי בזמן שאין זריחה/שקיעה)
+const DAILY_ZMAN_IDS = [
+  'alot-hashachar', 'misheyakir', 'sof-zman-shema', 'sof-zman-tefila',
+  'chatzot-day', 'mincha-gedola', 'plag-hamincha', 'chatzot-night'
+];
+
 // דיוק המיקום שנשלח לשירותי הגאוקודינג החיצוניים.
 // 3 ספרות אחרי הנקודה = כ-100 מטר, מספיק כדי לזהות יישוב בלי לחשוף מיקום מדויק.
 const GEOCODE_PRECISION = 3;
@@ -214,6 +231,7 @@ function getSunTimes(date, latitude, longitude) {
 function showSunUnavailable() {
   document.getElementById('sun-times').textContent = 'אין זריחה או שקיעה במיקום זה היום';
   document.getElementById('custom-time').textContent = '--:--';
+  DAILY_ZMAN_IDS.forEach(id => displayZmanCard(id, null, new Date()));
 }
 
 function displaySunTimes(now, sunrise, sunset) {
@@ -291,6 +309,152 @@ function applyTheme(zmanType) {
   document.body.classList.add(zmanType === 'יום' ? 'day' : 'night');
 }
 
+function formatHM(date) {
+  return date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+}
+
+// מציג זמן בקוביית זמן בודדת, ומסמן קוביות שהזמן שלהן כבר עבר היום (class 'past').
+function displayZmanCard(id, date, now) {
+  const valueEl = document.getElementById(id);
+  if (!valueEl) return;
+  const card = valueEl.closest('.zman-card');
+
+  if (!isValidDate(date)) {
+    valueEl.textContent = '--:--';
+    if (card) card.classList.remove('past');
+    return;
+  }
+
+  valueEl.textContent = formatHM(date);
+  if (card) card.classList.toggle('past', now >= date);
+}
+
+// זמנים הלכתיים המבוססים על שעה זמנית של היום (שיטת הגר"א - זריחה עד שקיעה),
+// בהתאם לחישוב הקיים ל"שעה זמנית" ביום. עלות השחר ומשיכיר מחושבים בדקות קבועות
+// לפני הזריחה (שיטה נפוצה), ולא בשעות זמניות.
+function computeDailyZmanim(sunrise, sunset) {
+  if (!isValidDate(sunrise) || !isValidDate(sunset) || sunset <= sunrise) return null;
+
+  const shaaZmanitMs = (sunset - sunrise) / 12;
+
+  return {
+    alotHashachar: new Date(sunrise.getTime() - 72 * 60000),
+    misheyakir: new Date(sunrise.getTime() - 50 * 60000),
+    sofZmanShema: new Date(sunrise.getTime() + 3 * shaaZmanitMs),
+    sofZmanTefila: new Date(sunrise.getTime() + 4 * shaaZmanitMs),
+    minchaGedola: new Date(sunrise.getTime() + 6.5 * shaaZmanitMs),
+    plagHamincha: new Date(sunrise.getTime() + 10.75 * shaaZmanitMs)
+  };
+}
+
+// חצות הלילה (nadir) של SunCalc לתאריך נתון תמיד נופל 12 שעות לפני הצהריים
+// האסטרונומיים של אותו תאריך לועזי - כלומר "היום" מקבל את חצות הלילה שכבר עבר
+// בבוקרו, לא את זה של הלילה הקרוב. לכן בוחרים, מתוך אתמול/היום/מחר, את הערך
+// הקרוב ביותר לזמן הנוכחי - זהו תמיד חצות הלילה הרלוונטי בפועל.
+function pickClosestDate(now, candidates) {
+  return candidates.filter(isValidDate).reduce(
+    (best, candidate) => (best === null || Math.abs(candidate - now) < Math.abs(best - now)) ? candidate : best,
+    null
+  );
+}
+
+function displayDailyZmanim(now, times, prevTimes, nextTimes) {
+  const daily = computeDailyZmanim(times.sunrise, times.sunset);
+  const chatzotNight = pickClosestDate(now, [prevTimes.nadir, times.nadir, nextTimes.nadir]);
+
+  if (!daily) {
+    DAILY_ZMAN_IDS.forEach(id => displayZmanCard(id, null, now));
+    return;
+  }
+
+  displayZmanCard('alot-hashachar', daily.alotHashachar, now);
+  displayZmanCard('misheyakir', daily.misheyakir, now);
+  displayZmanCard('sof-zman-shema', daily.sofZmanShema, now);
+  displayZmanCard('sof-zman-tefila', daily.sofZmanTefila, now);
+  displayZmanCard('chatzot-day', times.solarNoon, now);
+  displayZmanCard('mincha-gedola', daily.minchaGedola, now);
+  displayZmanCard('plag-hamincha', daily.plagHamincha, now);
+  displayZmanCard('chatzot-night', chatzotNight, now);
+}
+
+function toRad(deg) { return deg * Math.PI / 180; }
+function toDeg(rad) { return rad * 180 / Math.PI; }
+
+// זווית (bearing) גיאוגרפית ראשונית ממיקום נתון לירושלים, על פני מעגל גדול (great circle).
+function getJerusalemBearing(latitude, longitude) {
+  const phi1 = toRad(latitude);
+  const phi2 = toRad(JERUSALEM_POSITION.latitude);
+  const deltaLambda = toRad(JERUSALEM_POSITION.longitude - longitude);
+
+  const theta = Math.atan2(
+    Math.sin(deltaLambda) * Math.cos(phi2),
+    Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(deltaLambda)
+  );
+
+  return (toDeg(theta) + 360) % 360;
+}
+
+function bearingToCompassLabel(bearing) {
+  const index = Math.round(bearing / 22.5) % COMPASS_LABELS.length;
+  return COMPASS_LABELS[index];
+}
+
+function displayCompassCard(latitude, longitude) {
+  const arrow = document.getElementById('compass-arrow');
+  const degreesEl = document.getElementById('compass-degrees');
+  const labelEl = document.getElementById('compass-label');
+  if (!arrow || !degreesEl || !labelEl) return;
+
+  const bearing = getJerusalemBearing(latitude, longitude);
+  arrow.style.transform = `rotate(${bearing}deg)`;
+  degreesEl.textContent = `${Math.round(bearing)}°`;
+  labelEl.textContent = bearingToCompassLabel(bearing);
+}
+
+// העומר משתנה בשקיעה ולא בחצות - ה-Intl Hebrew calendar מחשב תאריך עברי לפי חצות
+// אזרחי, ולכן אחרי השקיעה מתקדמים ליום הלועזי הבא כדי לקבל את היום העברי ההלכתי הנכון.
+function getEffectiveOmerDate(now, todaySunset) {
+  if (isValidDate(todaySunset) && now >= todaySunset) {
+    return new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  }
+  return now;
+}
+
+function getOmerDay(now, todaySunset) {
+  const effectiveDate = getEffectiveOmerDate(now, todaySunset);
+  const { day, month } = getHebrewDateParts(effectiveDate);
+
+  // startsWith כדי לצמצם רגישות לשינויי כתיב בין מנועי Intl (למשל "סיון"/"סיוון").
+  if (month.startsWith('ניס') && day >= 16) return day - 15;
+  if (month.startsWith('איי')) return day + 15;
+  if (month.startsWith('סיו') && day <= 5) return day + 44;
+  return null;
+}
+
+function displayOmerCard(now, todaySunset) {
+  const section = document.getElementById('omer-section');
+  const countEl = document.getElementById('omer-count');
+  const detailEl = document.getElementById('omer-detail');
+  if (!section || !countEl) return;
+
+  const omerDay = getOmerDay(now, todaySunset);
+  if (omerDay === null) {
+    section.hidden = true;
+    return;
+  }
+
+  section.hidden = false;
+  countEl.textContent = `היום ${gematria(omerDay)} בעומר`;
+
+  if (detailEl) {
+    const weeks = Math.floor((omerDay - 1) / 7);
+    const days = (omerDay - 1) % 7;
+    detailEl.textContent = weeks > 0
+      ? `${gematria(weeks)} שבוע${weeks > 1 ? 'ות' : ''}${days > 0 ? ' ו' + gematria(days) + ' ימים' : ''}`
+      : '';
+  }
+}
+
 function gematria(num) {
   const hundreds = [[400, 'ת'], [300, 'ש'], [200, 'ר'], [100, 'ק']];
   const tens = [[90, 'צ'], [80, 'פ'], [70, 'ע'], [60, 'ס'], [50, 'נ'], [40, 'מ'], [30, 'ל'], [20, 'כ'], [10, 'י']];
@@ -325,17 +489,23 @@ function gematria(num) {
   return result;
 }
 
-function getFormattedHebrewDate(date) {
+function getHebrewDateParts(date) {
   const formatter = new Intl.DateTimeFormat('he-u-ca-hebrew', {
     day: 'numeric',
     month: 'long',
     year: 'numeric'
   });
   const parts = formatter.formatToParts(date);
-  const day = parseInt(parts.find(p => p.type === 'day').value);
-  const monthName = parts.find(p => p.type === 'month').value;
-  const year = parseInt(parts.find(p => p.type === 'year').value);
-  return `${gematria(day)} ב${monthName} ${gematria(year % 1000)}`;
+  return {
+    day: parseInt(parts.find(p => p.type === 'day').value),
+    month: parts.find(p => p.type === 'month').value,
+    year: parseInt(parts.find(p => p.type === 'year').value)
+  };
+}
+
+function getFormattedHebrewDate(date) {
+  const { day, month, year } = getHebrewDateParts(date);
+  return `${gematria(day)} ב${month} ${gematria(year % 1000)}`;
 }
 
 function updateDateBar() {
@@ -411,6 +581,9 @@ function updateAll() {
   const prevTimes = getSunTimes(prevDay, state.latitude, state.longitude);
   const nextTimes = getSunTimes(nextDay, state.latitude, state.longitude);
 
+  displayCompassCard(state.latitude, state.longitude);
+  displayOmerCard(now, times.sunset);
+
   if (!hasSunEvents(times)) {
     showSunUnavailable();
     return;
@@ -418,6 +591,7 @@ function updateAll() {
 
   displaySunTimes(now, times.sunrise, times.sunset);
   displayZmanitTime(now, times.sunrise, times.sunset, prevTimes.sunset, nextTimes.sunrise);
+  displayDailyZmanim(now, times, prevTimes, nextTimes);
 }
 
 function init() {

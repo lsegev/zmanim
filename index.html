@@ -131,6 +131,79 @@
     </div>
   </div>
 
+  <section class="zman-section">
+    <h3 class="zman-section-title">זמני תפילה</h3>
+    <div class="zman-grid">
+      <div class="zman-card">
+        <h4><span class="icon">🌅</span>עלות השחר</h4>
+        <div id="alot-hashachar">--:--</div>
+        <span class="zman-note">72 דק' לפני הנץ</span>
+      </div>
+      <div class="zman-card">
+        <h4><span class="icon">👁️</span>משיכיר</h4>
+        <div id="misheyakir">--:--</div>
+        <span class="zman-note">50 דק' לפני הנץ</span>
+      </div>
+      <div class="zman-card">
+        <h4><span class="icon">📖</span>סוף זמן ק"ש</h4>
+        <div id="sof-zman-shema">--:--</div>
+        <span class="zman-note">(שיטת הגר"א)</span>
+      </div>
+      <div class="zman-card">
+        <h4><span class="icon">🙏</span>סוף זמן תפילה</h4>
+        <div id="sof-zman-tefila">--:--</div>
+        <span class="zman-note">(שיטת הגר"א)</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="zman-section">
+    <h3 class="zman-section-title">חצות ומנחה</h3>
+    <div class="zman-grid">
+      <div class="zman-card">
+        <h4><span class="icon">☀️</span>חצות היום</h4>
+        <div id="chatzot-day">--:--</div>
+      </div>
+      <div class="zman-card">
+        <h4><span class="icon">🕓</span>מנחה גדולה</h4>
+        <div id="mincha-gedola">--:--</div>
+        <span class="zman-note">(שיטת הגר"א)</span>
+      </div>
+      <div class="zman-card">
+        <h4><span class="icon">🌇</span>פלג המנחה</h4>
+        <div id="plag-hamincha">--:--</div>
+      </div>
+      <div class="zman-card">
+        <h4><span class="icon">🌙</span>חצות הלילה</h4>
+        <div id="chatzot-night">--:--</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="zman-section" id="omer-section" hidden>
+    <h3 class="zman-section-title"><span class="icon">🌾</span>ספירת העומר</h3>
+    <div class="omer-card">
+      <div id="omer-count">--</div>
+      <span id="omer-detail" class="zman-note"></span>
+    </div>
+  </section>
+
+  <section class="zman-section">
+    <h3 class="zman-section-title"><span class="icon">🧭</span>כיוון תפילה</h3>
+    <div class="compass-card">
+      <svg class="compass" viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="46" class="compass-ring" />
+        <text x="50" y="14" class="compass-north-label">צ</text>
+        <polygon id="compass-arrow" class="compass-needle" points="50,12 42,56 50,46 58,56" />
+      </svg>
+      <div class="compass-info">
+        <div id="compass-degrees">--°</div>
+        <span id="compass-label" class="zman-note">--</span>
+      </div>
+    </div>
+    <p class="zman-hint">הכיוון הגיאוגרפי לירושלים - יש להצמיד למצפן אמיתי לכיוון מדויק</p>
+  </section>
+
   <!-- SunCalc 1.9.0 (MIT) מוגש מהמקור עצמו: אין תלות ב-CDN חיצוני שיכול להתחלף
        תחת אותה כתובת, והספרייה זמינה גם offline. ראה vendor/suncalc-LICENSE.txt -->
   <script src="vendor/suncalc.js"></script>
