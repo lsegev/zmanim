@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zmanim-v0.7.0';
+const CACHE_NAME = 'mil-v0.8.0';
 
 // נתיבים יחסיים בלבד: הם נפתרים מול scope של ה-Service Worker (למשל /zmanim/),
 // ולכן עובדים גם כשהאתר מתפרסם בתת-נתיב כמו GitHub Pages.
@@ -11,7 +11,10 @@ const ASSETS_TO_CACHE = [
   'app-init.js',
   'vendor/suncalc.js',
   'manifest.json',
-  'icon.png'
+  'icon-192.png',
+  'icon-512.png',
+  'apple-touch-icon.png',
+  'favicon-32.png'
 ];
 
 const OFFLINE_URL = 'offline.html';
