@@ -334,7 +334,10 @@
       </svg>
       <div class="compass-info">
         <div id="compass-degrees" class="num">--°</div>
-        <span class="zman-note">לכיוון הכותל המערבי</span>
+        <span class="zman-note">מעלות מצפון לכיוון הכותל המערבי</span>
+        <!-- הקריאה החיה: האזימוט שמעליה קבוע למיקום, ולכן רק כאן מוצג
+             נתון שמשתנה בזמן אמת עם סיבוב המכשיר. -->
+        <span id="compass-live-readout" class="compass-readout num" hidden></span>
         <button id="compass-live-toggle" type="button" class="compass-live-button">
           <svg class="icon" aria-hidden="true"><use href="#i-compass" /></svg>הפעלת מצפן חי
         </button>
