@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<!-- מחלקת הערכה (day/night) יושבת על <html> ולא על <body>, כדי ש-app-init.js
+     יוכל לקבוע אותה בתוך ה-head - לפני הצביעה הראשונה ובלי הבזק לבן בלילה. -->
+<html lang="he" dir="rtl" class="day">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -22,7 +24,7 @@
     object-src 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
 
-  <meta name="theme-color" content="#ffffff">
+  <meta name="theme-color" content="#cdeefd" id="theme-color-meta">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -34,10 +36,10 @@
   <title>זמנים - זמני היום, זמני שבת, פרשת שבוע ולוח שנה עברי</title>
 
   <!-- תיאור הדף (snippet בגוגל) -->
-  <meta name="description" content="היישומון זמנים מציג את השעה הנוכחית, השעה הזמנית לפי הלכה, תאריך עברי ולועזי, זמני זריחה ושקיעה, פרשת השבוע, זמני כניסת ויציאת שבת וחגים, ועוד – מותאם אוטומטית לפי מיקום המשתמש.">
+  <meta name="description" content="היישומון זמנים מציג את השעה הנוכחית, השעה הזמנית לפי הלכה, תאריך עברי ולועזי, זמני זריחה ושקיעה, צאת הכוכבים, פרשת השבוע, זמני כניסת ויציאת שבת וחגים, ועוד – מותאם אוטומטית לפי מיקום המשתמש.">
 
   <!-- מילות מפתח (לא קריטי, אך עדיין קיים) -->
-  <meta name="keywords" content="זמנים, זמני שבת, זמני הדלקת נרות, פרשת שבוע, תאריך עברי, זמן הלכתי, זריחה, שקיעה, כניסת שבת, לוח שנה עברי, לוח שנה יהודי, Jewish Calendar, Hebrew Date, שבת, חג, חגים, חנוכה, פסח, ראש השנה">
+  <meta name="keywords" content="זמנים, זמני שבת, זמני הדלקת נרות, פרשת שבוע, תאריך עברי, זמן הלכתי, זריחה, שקיעה, צאת הכוכבים, כניסת שבת, לוח שנה עברי, לוח שנה יהודי, Jewish Calendar, Hebrew Date, שבת, חג, חגים, חנוכה, פסח, ראש השנה">
 
   <!-- מחבר האתר -->
   <meta name="author" content="lsegev">
@@ -57,50 +59,153 @@
   <link rel="stylesheet" href="style.css">
   <script src="app-init.js"></script>
 </head>
-<!-- ברירת מחדל "day" כדי שתמיד יהיה רקע תקין, גם לפני שהמיקום מתקבל
-     וגם במקומות שבהם אין זריחה/שקיעה (קווי רוחב קוטביים). -->
-<body class="day">
+<body>
+  <!--
+    מאגר האייקונים: סט קווי חד-צבעי שיורש את צבע הטקסט (currentColor).
+    החליף את אייקוני האימוג'י, שנראו שונה בכל מערכת הפעלה ומשכו את העין
+    בצבעים רוויים שלא התיישבו עם הפלטה.
+  -->
+  <svg class="icon-sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-sunrise" viewBox="0 0 24 24">
+      <circle cx="12" cy="13.5" r="3.2" />
+      <path d="M3.5 20h17M12 6.2V2.6M10 4.6 12 2.6l2 2M5.6 8.1 6.9 9.4M18.4 8.1 17.1 9.4M2.8 15h1.8M19.4 15h1.8" />
+    </symbol>
+    <symbol id="i-sunset" viewBox="0 0 24 24">
+      <circle cx="12" cy="13.5" r="3.2" />
+      <path d="M3.5 20h17M12 2.6v3.6M10 4.2 12 6.2l2-2M5.6 8.1 6.9 9.4M18.4 8.1 17.1 9.4M2.8 15h1.8M19.4 15h1.8" />
+    </symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="4.2" />
+      <path d="M12 2.2v2.6M12 19.2v2.6M4.3 4.3 6.1 6.1M17.9 17.9l1.8 1.8M2.2 12h2.6M19.2 12h2.6M4.3 19.7 6.1 17.9M17.9 6.1l1.8-1.8" />
+    </symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24">
+      <path d="M20.5 14.6A8.7 8.7 0 0 1 9.4 3.5a8.8 8.8 0 1 0 11.1 11.1Z" />
+    </symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24">
+      <path d="M2.2 12S5.6 5.8 12 5.8 21.8 12 21.8 12 18.4 18.2 12 18.2 2.2 12 2.2 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </symbol>
+    <symbol id="i-book" viewBox="0 0 24 24">
+      <path d="M12 6.6C10.3 5.2 8.2 4.6 5 4.6v12.8c3.2 0 5.3.6 7 2 1.7-1.4 3.8-2 7-2V4.6c-3.2 0-5.3.6-7 2Z" />
+      <path d="M12 6.6v12.8" />
+    </symbol>
+    <symbol id="i-hourglass" viewBox="0 0 24 24">
+      <path d="M6.5 3h11M6.5 21h11" />
+      <path d="M17 3v3.6c0 1.5-.9 2.9-2.3 3.6L12 12 9.3 10.2C7.9 9.5 7 8.1 7 6.6V3" />
+      <path d="M7 21v-3.6c0-1.5.9-2.9 2.3-3.6L12 12l2.7 1.8c1.4.7 2.3 2.1 2.3 3.6V21" />
+    </symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.6" />
+      <path d="M12 6.8v5.4l3.4 2" />
+    </symbol>
+    <symbol id="i-stars" viewBox="0 0 24 24">
+      <path d="M7 3.6 8.1 6.4l2.8 1.1-2.8 1.1L7 11.4 5.9 8.6 3.1 7.5l2.8-1.1Z" />
+      <path d="M16.8 10.2l.9 2.3 2.3.9-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9Z" />
+      <path d="M9.6 15.6l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7Z" />
+    </symbol>
+    <symbol id="i-moon-star" viewBox="0 0 24 24">
+      <path d="M20.6 15.4A8.4 8.4 0 0 1 9.9 4.7a8.5 8.5 0 1 0 10.7 10.7Z" />
+      <path d="M17.4 2.6l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8Z" />
+    </symbol>
+    <symbol id="i-wheat" viewBox="0 0 24 24">
+      <path d="M12 21.4V7.2" />
+      <path d="M12 7.2c0-2 1.3-3.4 3.2-3.4 0 2-1.3 3.4-3.2 3.4ZM12 7.2c0-2-1.3-3.4-3.2-3.4 0 2 1.3 3.4 3.2 3.4Z" />
+      <path d="M12 12c0-2 1.3-3.4 3.2-3.4 0 2-1.3 3.4-3.2 3.4ZM12 12c0-2-1.3-3.4-3.2-3.4 0 2 1.3 3.4 3.2 3.4Z" />
+      <path d="M12 16.8c0-2 1.3-3.4 3.2-3.4 0 2-1.3 3.4-3.2 3.4ZM12 16.8c0-2-1.3-3.4-3.2-3.4 0 2 1.3 3.4 3.2 3.4Z" />
+    </symbol>
+    <symbol id="i-compass" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M15.8 8.2 13.8 13.8 8.2 15.8 10.2 10.2Z" />
+    </symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24">
+      <path d="M12 21.4s6.8-5.5 6.8-10.8a6.8 6.8 0 1 0-13.6 0C5.2 15.9 12 21.4 12 21.4Z" />
+      <circle cx="12" cy="10.3" r="2.6" />
+    </symbol>
+    <symbol id="i-home" viewBox="0 0 24 24">
+      <path d="M3.4 10.6 12 3.4l8.6 7.2" />
+      <path d="M5.8 9.1v11.5h12.4V9.1" />
+    </symbol>
+    <symbol id="i-candle" viewBox="0 0 24 24">
+      <rect x="9.1" y="10.6" width="5.8" height="10" rx="1.4" />
+      <path d="M12 10.6V8.9" />
+      <path d="M12 8.9c1.6 0 2.7-1.1 2.7-2.6C14.7 4.6 12 2.4 12 2.4S9.3 4.6 9.3 6.3c0 1.5 1.1 2.6 2.7 2.6Z" />
+    </symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24">
+      <rect x="3.4" y="5" width="17.2" height="15.8" rx="2.6" />
+      <path d="M3.4 10h17.2M8.4 2.9v4.2M15.6 2.9v4.2" />
+    </symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24">
+      <path d="M3.6 7h16.8M3.6 12h16.8M3.6 17h16.8" />
+    </symbol>
+    <symbol id="i-close" viewBox="0 0 24 24">
+      <path d="M6.2 6.2 17.8 17.8M17.8 6.2 6.2 17.8" />
+    </symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24">
+      <path d="M23 4v6h-6" />
+      <path d="M1 20v-6h6" />
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+    </symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24">
+      <path d="M12 3.4 21.6 20.2H2.4L12 3.4Z" />
+      <path d="M12 9.6v4.3M12 16.9h.01" />
+    </symbol>
+    <symbol id="i-theme-auto" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.6" />
+      <path d="M12 3.4a8.6 8.6 0 0 1 0 17.2Z" fill="currentColor" stroke="none" />
+    </symbol>
+  </svg>
+
   <div id="update-banner" class="update-banner" hidden>
     יש גרסה חדשה! <button id="update-button" type="button">רענן עכשיו</button>
   </div>
-  <div class="menu-toggle">☰</div>
-  <div class="refresh-button">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M23 4v6h-6"/>
-      <path d="M1 20v-6h6"/>
-      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-    </svg>
+
+  <div class="top-actions">
+    <button type="button" class="icon-button refresh-button" aria-label="רענון האפליקציה">
+      <svg class="icon" aria-hidden="true"><use href="#i-refresh" /></svg>
+    </button>
+    <button type="button" class="icon-button theme-button" id="theme-button">
+      <svg class="icon" aria-hidden="true"><use href="#i-theme-auto" id="theme-icon" /></svg>
+    </button>
   </div>
-  <div class="side-menu">
+
+  <button type="button" class="icon-button menu-toggle" id="menu-toggle"
+          aria-label="פתיחת התפריט" aria-expanded="false" aria-controls="side-menu">
+    <svg class="icon" aria-hidden="true"><use href="#i-menu" /></svg>
+  </button>
+
+  <div class="side-menu" id="side-menu" aria-hidden="true">
     <div class="menu-header">
       <h2>תפריט</h2>
-      <div class="menu-close">×</div>
+      <button type="button" class="icon-button menu-close" aria-label="סגירת התפריט">
+        <svg class="icon" aria-hidden="true"><use href="#i-close" /></svg>
+      </button>
     </div>
-    <nav class="menu-content">
+    <nav class="menu-content" aria-label="ניווט ראשי">
       <ul class="menu-list">
         <li class="menu-item active">
-          <a href="./">
-            <span class="menu-icon">🏠</span>
+          <a href="./" aria-current="page">
+            <svg class="menu-icon" aria-hidden="true"><use href="#i-home" /></svg>
             <span class="menu-text">דף הבית</span>
           </a>
         </li>
+        <!-- דפים שטרם נבנו: ללא href, ולכן גם לא ניתנים למיקוד מקלדת ולא מנווטים לשום מקום -->
         <li class="menu-item soon">
-          <a href="./shabbat/" aria-disabled="true">
-            <span class="menu-icon">🕯️</span>
+          <a aria-disabled="true">
+            <svg class="menu-icon" aria-hidden="true"><use href="#i-candle" /></svg>
             <span class="menu-text">זמני שבת</span>
             <span class="menu-badge">בקרוב</span>
           </a>
         </li>
         <li class="menu-item soon">
-          <a href="./important-dates/" aria-disabled="true">
-            <span class="menu-icon">📅</span>
+          <a aria-disabled="true">
+            <svg class="menu-icon" aria-hidden="true"><use href="#i-calendar" /></svg>
             <span class="menu-text">תאריכים חשובים השבוע</span>
             <span class="menu-badge">בקרוב</span>
           </a>
         </li>
         <li class="menu-item soon">
-          <a href="./daily-study/" aria-disabled="true">
-            <span class="menu-icon">📚</span>
+          <a aria-disabled="true">
+            <svg class="menu-icon" aria-hidden="true"><use href="#i-book" /></svg>
             <span class="menu-text">לימוד יומי</span>
             <span class="menu-badge">בקרוב</span>
           </a>
@@ -113,20 +218,43 @@
     </nav>
   </div>
   <div class="overlay"></div>
-  <div class="date-bar" id="date-bar">...</div>
+
+  <!-- המיקום נוגע לכל הזמנים בעמוד, ולכן הוא יושב בפס התאריך ולא בתוך
+       כותרת של קוביה בודדת. -->
+  <div class="date-bar">
+    <span class="date-bar-location" id="location-name" hidden>
+      <svg class="icon" aria-hidden="true"><use href="#i-pin" /></svg>
+      <span id="location-name-text"></span>
+      <span class="location-badge" id="location-approx-badge" hidden>משוער</span>
+    </span>
+    <span id="date-bar-text">...</span>
+  </div>
+
+  <!-- הזמן ההלכתי הקרוב ביותר - התשובה לשאלה שבגללה פותחים את האפליקציה -->
+  <section class="next-zman" id="next-zman" hidden>
+    <div class="next-zman-side">
+      <span class="next-zman-label">הזמן הבא</span>
+      <span class="next-zman-name" id="next-zman-name">--</span>
+    </div>
+    <div class="next-zman-side end">
+      <span class="next-zman-time num" id="next-zman-time">--:--</span>
+      <span class="next-zman-countdown" id="next-zman-countdown">--</span>
+    </div>
+  </section>
+
   <div class="container">
     <div class="time-box right">
       <h2>השעה הנוכחית</h2>
-      <div id="current-time">--:--:--</div>
+      <div id="current-time" class="num">--:--:--</div>
     </div>
 
     <div class="time-box center">
       <h2>שעה זמנית</h2>
-      <div id="custom-time">--:--<br><span class="zman-type">--</span></div>
+      <div id="custom-time"><span class="zmanit-value num">--:--</span><span class="zman-type">--</span></div>
     </div>
 
     <div class="time-box left">
-      <h2 id="sun-times-title">זריחה ושקיעה</h2>
+      <h2>זריחה ושקיעה</h2>
       <div id="sun-times">--</div>
     </div>
   </div>
@@ -135,53 +263,65 @@
     <h3 class="zman-section-title">זמני תפילה</h3>
     <div class="zman-grid">
       <div class="zman-card">
-        <h4><span class="icon">🌅</span>עלות השחר</h4>
-        <div id="alot-hashachar">--:--</div>
+        <h4><svg class="icon" aria-hidden="true"><use href="#i-sunrise" /></svg>עלות השחר</h4>
+        <div id="alot-hashachar" class="num">--:--</div>
         <span class="zman-note">72 דק' זמניות (שעה וחמישית) לפני הנץ</span>
       </div>
       <div class="zman-card">
-        <h4><span class="icon">👁️</span>משיכיר</h4>
-        <div id="misheyakir">--:--</div>
+        <h4><svg class="icon" aria-hidden="true"><use href="#i-eye" /></svg>משיכיר</h4>
+        <div id="misheyakir" class="num">--:--</div>
         <span class="zman-note">50 דק' זמניות לפני הנץ</span>
       </div>
       <div class="zman-card">
-        <h4><span class="icon">📖</span>סוף זמן ק"ש</h4>
-        <div id="sof-zman-shema">--:--</div>
+        <h4><svg class="icon" aria-hidden="true"><use href="#i-book" /></svg>סוף זמן ק"ש</h4>
+        <div id="sof-zman-shema" class="num">--:--</div>
         <span class="zman-note">(שיטת הגר"א)</span>
       </div>
       <div class="zman-card">
-        <h4><span class="icon">🙏</span>סוף זמן תפילה</h4>
-        <div id="sof-zman-tefila">--:--</div>
+        <h4><svg class="icon" aria-hidden="true"><use href="#i-hourglass" /></svg>סוף זמן תפילה</h4>
+        <div id="sof-zman-tefila" class="num">--:--</div>
         <span class="zman-note">(שיטת הגר"א)</span>
       </div>
     </div>
   </section>
 
   <section class="zman-section">
-    <h3 class="zman-section-title">חצות ומנחה</h3>
+    <h3 class="zman-section-title">חצות, מנחה ולילה</h3>
     <div class="zman-grid">
       <div class="zman-card">
-        <h4><span class="icon">☀️</span>חצות היום</h4>
-        <div id="chatzot-day">--:--</div>
+        <h4><svg class="icon" aria-hidden="true"><use href="#i-sun" /></svg>חצות היום</h4>
+        <div id="chatzot-day" class="num">--:--</div>
       </div>
       <div class="zman-card">
-        <h4><span class="icon">🕓</span>מנחה גדולה</h4>
-        <div id="mincha-gedola">--:--</div>
+        <h4><svg class="icon" aria-hidden="true"><use href="#i-clock" /></svg>מנחה גדולה</h4>
+        <div id="mincha-gedola" class="num">--:--</div>
         <span class="zman-note">(שיטת הגר"א)</span>
       </div>
       <div class="zman-card">
-        <h4><span class="icon">🌇</span>פלג המנחה</h4>
-        <div id="plag-hamincha">--:--</div>
+        <h4><svg class="icon" aria-hidden="true"><use href="#i-sunset" /></svg>פלג המנחה</h4>
+        <div id="plag-hamincha" class="num">--:--</div>
       </div>
       <div class="zman-card">
-        <h4><span class="icon">🌙</span>חצות הלילה</h4>
-        <div id="chatzot-night">--:--</div>
+        <h4><svg class="icon" aria-hidden="true"><use href="#i-stars" /></svg>צאת הכוכבים</h4>
+        <div id="tzeit-hakochavim" class="num">--:--</div>
+        <span class="zman-note">18 דקות אחרי השקיעה</span>
+      </div>
+      <div class="zman-card">
+        <h4><svg class="icon" aria-hidden="true"><use href="#i-moon-star" /></svg>צאת הכוכבים (ר"ת)</h4>
+        <div id="tzeit-rabbeinu-tam" class="num">--:--</div>
+        <span class="zman-note">72 דק' זמניות אחרי השקיעה</span>
+      </div>
+      <div class="zman-card">
+        <h4><svg class="icon" aria-hidden="true"><use href="#i-moon" /></svg>חצות הלילה</h4>
+        <div id="chatzot-night" class="num">--:--</div>
       </div>
     </div>
   </section>
 
   <section class="zman-section" id="omer-section" hidden>
-    <h3 class="zman-section-title"><span class="icon">🌾</span>ספירת העומר</h3>
+    <h3 class="zman-section-title">
+      <svg class="icon" aria-hidden="true"><use href="#i-wheat" /></svg>ספירת העומר
+    </h3>
     <div class="omer-card">
       <div id="omer-count">--</div>
       <span id="omer-detail" class="zman-note"></span>
@@ -189,20 +329,39 @@
   </section>
 
   <section class="zman-section">
-    <h3 class="zman-section-title"><span class="icon">🧭</span>כיוון תפילה</h3>
+    <h3 class="zman-section-title">
+      <svg class="icon" aria-hidden="true"><use href="#i-compass" /></svg>כיוון תפילה
+    </h3>
     <div class="compass-card">
       <svg class="compass" viewBox="0 0 100 100" aria-hidden="true">
         <circle cx="50" cy="50" r="46" class="compass-ring" />
         <polygon id="compass-arrow" class="compass-needle" points="50,12 42,56 50,46 58,56" />
       </svg>
       <div class="compass-info">
-        <div id="compass-degrees">--°</div>
-        <span class="zman-note">לכיוון הכותל המערבי</span>
-        <button id="compass-live-toggle" type="button" class="compass-live-button">🧭 הפעלת מצפן חי</button>
+        <div id="compass-degrees" class="num">--°</div>
+        <span class="zman-note">מעלות מצפון לכיוון מקום המקדש</span>
+        <!-- הקריאה החיה: האזימוט שמעליה קבוע למיקום, ולכן רק כאן מוצג
+             נתון שמשתנה בזמן אמת עם סיבוב המכשיר. -->
+        <span id="compass-live-readout" class="compass-readout num" hidden></span>
+        <button id="compass-live-toggle" type="button" class="compass-live-button">
+          <svg class="icon" aria-hidden="true"><use href="#i-compass" /></svg>הפעלת מצפן חי
+        </button>
         <span id="compass-live-status" class="zman-note"></span>
       </div>
     </div>
-    <p class="zman-hint" id="compass-hint">הכיוון הגיאוגרפי המדויק לכותל המערבי בירושלים - יש להצמיד למצפן אמיתי לכיוון מדויק, או ללחוץ על "הפעלת מצפן חי"</p>
+    <!-- מיקום שגוי פוגע בכיוון התפילה הרבה יותר מאשר בזמנים: טעות של
+         עשרות ק"מ מזיזה את הזריחה בדקות, אבל את הזווית בעשרות מעלות. -->
+    <div class="location-warning" id="location-warning" hidden>
+      <svg class="icon" aria-hidden="true"><use href="#i-alert" /></svg>
+      <div class="location-warning-body">
+        <strong>המיקום משוער</strong> - הוא נקבע לפי כתובת ה-IP ולא לפי GPS, ולכן הוא עלול
+        להיות רחוק עשרות קילומטרים. הזמנים יסטו בדקות ספורות, אך כיוון התפילה עלול לסטות
+        בעשרות מעלות.
+        <button type="button" id="location-retry" class="compass-live-button">אישור מיקום מדויק</button>
+        <span id="location-retry-status" class="zman-note"></span>
+      </div>
+    </div>
+    <p class="zman-hint" id="compass-hint">הכיוון הגיאוגרפי לאבן השתייה שבהר הבית - יש להצמיד למצפן אמיתי לכיוון מדויק, או ללחוץ על "הפעלת מצפן חי"</p>
   </section>
 
   <!-- SunCalc 1.9.0 (MIT) מוגש מהמקור עצמו: אין תלות ב-CDN חיצוני שיכול להתחלף

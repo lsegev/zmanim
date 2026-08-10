@@ -3,14 +3,40 @@
 // מיקום ברירת מחדל - ירושלים (בשימוש כשאין הרשאת מיקום ואין זיהוי לפי IP)
 const DEFAULT_POSITION = { latitude: 31.7683, longitude: 35.2137 };
 
-// כותל המערבי - נקודת היעד לחישוב כיוון התפילה (לא ירושלים באופן כללי)
-const WESTERN_WALL_POSITION = { latitude: 31.776930, longitude: 35.234524 };
+// אבן השתייה שבהר הבית - נקודת היעד לחישוב כיוון התפילה.
+// לפי שולחן ערוך או"ח צ"ד א', היעד הוא מקום המקדש ובית קודשי הקודשים, ולא
+// הכותל המערבי (שהוא הקיר התומך המערבי של ההר, כ-140 מ' ממערב לנקודה הזו).
+// מחוץ לירושלים ההפרש בין שתי הנקודות זניח - כשליש מעלה מבית אל וכ-0.14
+// מעלות מתל אביב - אך בתוך ירושלים הוא מגיע לכמה מעלות ואז הוא כן משמעותי.
+const FOUNDATION_STONE_POSITION = { latitude: 31.778040, longitude: 35.235400 };
 
 // מזהי הקוביות ההלכתיות המבוססות על שעה זמנית (לצורך ניקוי בזמן שאין זריחה/שקיעה)
 const DAILY_ZMAN_IDS = [
   'alot-hashachar', 'misheyakir', 'sof-zman-shema', 'sof-zman-tefila',
-  'chatzot-day', 'mincha-gedola', 'plag-hamincha', 'chatzot-night'
+  'chatzot-day', 'mincha-gedola', 'plag-hamincha',
+  'tzeit-hakochavim', 'tzeit-rabbeinu-tam', 'chatzot-night'
 ];
+
+// דקות קבועות אחרי השקיעה לצאת הכוכבים לפי מנהג ישראל הרווח.
+// זו הכרעה הלכתית ולא נתון אסטרונומי - יש נוהגים ב-13.5, 20 או 24 דקות.
+const TZEIT_MINUTES_AFTER_SUNSET = 18;
+
+// שמות הזמנים לסרגל "הזמן הבא". הנץ והשקיעה אינם קוביות זמן, ולכן הם
+// מזוהים במפתחות נפרדים שממופים לקוביית "זריחה ושקיעה".
+const ZMAN_LABELS = {
+  'alot-hashachar': 'עלות השחר',
+  'misheyakir': 'משיכיר',
+  'sof-zman-shema': 'סוף זמן ק"ש',
+  'sof-zman-tefila': 'סוף זמן תפילה',
+  'chatzot-day': 'חצות היום',
+  'mincha-gedola': 'מנחה גדולה',
+  'plag-hamincha': 'פלג המנחה',
+  'tzeit-hakochavim': 'צאת הכוכבים',
+  'tzeit-rabbeinu-tam': 'צאת הכוכבים (ר"ת)',
+  'chatzot-night': 'חצות הלילה',
+  'sunrise': 'הנץ החמה',
+  'sunset': 'שקיעה'
+};
 
 // דיוק המיקום שנשלח לשירותי הגאוקודינג החיצוניים.
 // 3 ספרות אחרי הנקודה = כ-100 מטר, מספיק כדי לזהות יישוב בלי לחשוף מיקום מדויק.
@@ -25,6 +51,9 @@ const CITY_CACHE_PREFIX = 'zmanim:city:';
 const state = {
   latitude: null,
   longitude: null,
+  // מקור המיקום: 'gps' (הרשאת דפדפן), 'ip' (זיהוי לפי כתובת IP) או
+  // 'default' (ירושלים, כשגם זה נכשל). רק 'gps' מדויק מספיק לכיוון תפילה.
+  locationSource: null,
   // המטמון של זמני השמש מפתחו הוא התאריך + המיקום, כך שהוא מתרענן
   // אוטומטית בחצות ואינו "נתקע" על התמונה שהתקבלה בטעינת הדף.
   sunTimesCache: new Map()
@@ -33,6 +62,22 @@ const state = {
 // כיוון המכשיר האמיתי (מעלות מצפון, בכיוון השעון) - null כל עוד לא הופעל מצפן חי
 // או שהדפדפן לא מספק חיישן כיוון מהימן.
 let deviceHeading = null;
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+// אייקון מתוך מאגר הסמלים שב-index.html. חייב createElementNS - אלמנטי SVG
+// שנוצרים עם createElement רגיל מקבלים namespace של HTML ולא נרנדרים.
+function createIcon(name) {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('class', 'icon');
+  svg.setAttribute('aria-hidden', 'true');
+
+  const use = document.createElementNS(SVG_NS, 'use');
+  use.setAttribute('href', '#' + name);
+
+  svg.appendChild(use);
+  return svg;
+}
 
 function updateCurrentTime() {
   const now = new Date();
@@ -47,7 +92,7 @@ function updateCurrentTime() {
 function requestLocation() {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
-      position => handleLocation(position.coords.latitude, position.coords.longitude),
+      position => handleLocation(position.coords.latitude, position.coords.longitude, 'gps'),
       error => {
         console.log('שגיאה בקבלת מיקום מהדפדפן:', error && error.message);
         tryIPFallback();
@@ -78,41 +123,95 @@ function tryIPFallback() {
       const latitude = Number(data.latitude);
       const longitude = Number(data.longitude);
       if (!isValidCoordinate(latitude, longitude)) throw new Error('קואורדינטות לא תקינות');
-      handleLocation(latitude, longitude);
+      handleLocation(latitude, longitude, 'ip');
     })
     .catch(error => {
       console.log('שגיאה בקבלת מיקום מ-IP:', error && error.message);
-      handleLocation(DEFAULT_POSITION.latitude, DEFAULT_POSITION.longitude);
+      handleLocation(DEFAULT_POSITION.latitude, DEFAULT_POSITION.longitude, 'default');
     });
 }
 
-function handleLocation(latitude, longitude) {
+function handleLocation(latitude, longitude, source) {
   if (!isValidCoordinate(latitude, longitude)) {
     console.log('התקבלו קואורדינטות לא תקינות, נעשה שימוש בברירת המחדל');
     latitude = DEFAULT_POSITION.latitude;
     longitude = DEFAULT_POSITION.longitude;
+    source = 'default';
   }
 
   state.latitude = latitude;
   state.longitude = longitude;
+  state.locationSource = source;
   state.sunTimesCache.clear();
 
+  updateLocationNotice();
   updateAll();
   updateCityName(latitude, longitude);
 }
 
+// מיקום שאינו מ-GPS פוגע בכיוון התפילה הרבה יותר מאשר בזמנים: זיהוי לפי IP
+// מצביע לרוב על עיר הספק ויכול להחטיא בעשרות קילומטרים, מה שמזיז את הזמנים
+// בדקות ספורות אך את הזווית לכיוון המקדש בעשרות מעלות.
+function updateLocationNotice() {
+  const approximate = state.locationSource !== 'gps';
+
+  const badge = document.getElementById('location-approx-badge');
+  if (badge) badge.hidden = !approximate;
+
+  const warning = document.getElementById('location-warning');
+  if (warning) warning.hidden = !approximate;
+}
+
+function setLocationRetryStatus(text) {
+  const status = document.getElementById('location-retry-status');
+  if (status) status.textContent = text;
+}
+
+function initLocationRetry() {
+  const button = document.getElementById('location-retry');
+  if (!button) return;
+
+  button.addEventListener('click', () => {
+    if (!navigator.geolocation) {
+      setLocationRetryStatus('הדפדפן אינו תומך באיתור מיקום');
+      return;
+    }
+
+    button.disabled = true;
+    setLocationRetryStatus('מאתר מיקום...');
+
+    // בקשה מפורשת של המשתמש, ולכן מבקשים מיקום טרי ומדויק ולא ערך מהמטמון.
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        button.disabled = false;
+        setLocationRetryStatus('');
+        handleLocation(position.coords.latitude, position.coords.longitude, 'gps');
+      },
+      error => {
+        console.log('בקשת מיקום חוזרת נכשלה:', error && error.message);
+        button.disabled = false;
+        // דחייה נזכרת בדפדפן: לחיצה נוספת לא תציג שוב חלון בקשה, ולכן
+        // ההודעה חייבת להסביר איפה מחזירים את ההרשאה ידנית.
+        setLocationRetryStatus(error && error.code === error.PERMISSION_DENIED
+          ? 'ההרשאה חסומה, והדפדפן לא ישאל שוב מעצמו. באייפון: כפתור "אA" בשורת הכתובת ← הגדרות אתר ← מיקום ← "שאל". אחר כך אפשר ללחוץ כאן שוב.'
+          : 'לא הצלחנו לאתר מיקום מדויק. כדאי לנסות שוב בחוץ או עם קליטה טובה יותר.');
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  });
+}
+
+// שם היישוב נוגע לכל הזמנים בעמוד ולכן הוא מוצג בפס התאריך, ולא בתוך
+// כותרת של קוביה בודדת שאיבדה בגללו את התווית שלה.
 function setCityTitle(city) {
+  const container = document.getElementById('location-name');
+  const text = document.getElementById('location-name-text');
+  if (!container || !text) return;
+
   // שם היישוב מגיע ממקור חיצוני הניתן לעריכה (OpenStreetMap), ולכן הוא
   // מוזרק כטקסט בלבד ולעולם לא כ-HTML.
-  const title = document.getElementById('sun-times-title');
-  title.textContent = '';
-
-  const icon = document.createElement('span');
-  icon.className = 'icon';
-  icon.textContent = '📍';
-
-  title.appendChild(icon);
-  title.appendChild(document.createTextNode(city));
+  text.textContent = city;
+  container.hidden = false;
 }
 
 function roundCoordinate(value) {
@@ -225,23 +324,55 @@ function getSunTimes(date, latitude, longitude) {
 }
 
 function showSunUnavailable() {
-  document.getElementById('sun-times').textContent = 'אין זריחה או שקיעה במיקום זה היום';
-  document.getElementById('custom-time').textContent = '--:--';
+  const sunTimes = document.getElementById('sun-times');
+  sunTimes.textContent = '';
+  const message = document.createElement('span');
+  message.className = 'sun-unavailable';
+  message.textContent = 'אין זריחה או שקיעה במיקום זה היום';
+  sunTimes.appendChild(message);
+
+  const container = document.getElementById('custom-time');
+  container.textContent = '';
+  const valueEl = document.createElement('span');
+  valueEl.className = 'zmanit-value num';
+  valueEl.textContent = '--:--';
+  container.appendChild(valueEl);
+
   DAILY_ZMAN_IDS.forEach(id => displayZmanCard(id, null, new Date()));
+  clearNextZman();
+}
+
+// שורת "תווית קטנה + ערך גדול", כדי שהשעה תהיה האלמנט הדומיננטי ולא
+// המילה שלפניה.
+function buildSunRow(label, value) {
+  const row = document.createElement('div');
+  row.className = 'sun-row';
+
+  const labelEl = document.createElement('span');
+  labelEl.className = 'sun-label';
+  labelEl.textContent = label;
+
+  const valueEl = document.createElement('span');
+  valueEl.className = 'sun-value num';
+  valueEl.textContent = value;
+
+  row.appendChild(labelEl);
+  row.appendChild(valueEl);
+  return row;
 }
 
 function displaySunTimes(now, sunrise, sunset) {
-  const sunriseStr = sunrise.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-  const sunsetStr = sunset.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+  const sunriseStr = formatHM(sunrise);
+  const sunsetStr = formatHM(sunset);
 
   const isDay = now >= sunrise && now < sunset;
-  const first = isDay ? `זריחה: ${sunriseStr}` : `שקיעה: ${sunsetStr}`;
-  const second = isDay ? `שקיעה: ${sunsetStr}` : `זריחה: ${sunriseStr}`;
+  const first = isDay ? ['זריחה', sunriseStr] : ['שקיעה', sunsetStr];
+  const second = isDay ? ['שקיעה', sunsetStr] : ['זריחה', sunriseStr];
 
   const container = document.getElementById('sun-times');
-  container.textContent = first;
-  container.appendChild(document.createElement('br'));
-  container.appendChild(document.createTextNode(second));
+  container.textContent = '';
+  container.appendChild(buildSunRow(first[0], first[1]));
+  container.appendChild(buildSunRow(second[0], second[1]));
 }
 
 function displayZmanitTime(now, todaySunrise, todaySunset, prevSunset, nextSunrise) {
@@ -276,18 +407,19 @@ function displayZmanitTime(now, todaySunrise, todaySunset, prevSunset, nextSunri
   const zmanMinutes = Math.floor((zmanFloat - zmanHours) * 60);
   const zmanDisplay = `${String(zmanHours).padStart(2, '0')}:${String(zmanMinutes).padStart(2, '0')}`;
   const zmanMinutesLength = Math.round(zmanitHourMs / 60000);
-  const icon = zmanType === 'יום' ? '☀️' : '🌙';
+  const iconName = zmanType === 'יום' ? 'i-sun' : 'i-moon';
 
   const container = document.getElementById('custom-time');
-  container.textContent = zmanDisplay;
-  container.appendChild(document.createElement('br'));
+  container.textContent = '';
+
+  const valueEl = document.createElement('span');
+  valueEl.className = 'zmanit-value num';
+  valueEl.textContent = zmanDisplay;
+  container.appendChild(valueEl);
 
   const typeEl = document.createElement('span');
   typeEl.className = 'zman-type';
-  const iconEl = document.createElement('span');
-  iconEl.className = 'icon';
-  iconEl.textContent = icon;
-  typeEl.appendChild(iconEl);
+  typeEl.appendChild(createIcon(iconName));
   typeEl.appendChild(document.createTextNode(zmanType));
 
   const lengthEl = document.createElement('span');
@@ -300,9 +432,93 @@ function displayZmanitTime(now, todaySunrise, todaySunset, prevSunset, nextSunri
   applyTheme(zmanType);
 }
 
+// ============================================================
+// ערכת נושא
+// ------------------------------------------------------------
+// שלושה מצבים: אוטומטי (לפי הזריחה והשקיעה במיקום בפועל), בהיר וכהה.
+// ההעדפה נשמרת מקומית. עד שמתקבל המיקום נשארת הערכה ש-app-init.js קבע
+// לפי prefers-color-scheme.
+// ============================================================
+const THEME_KEY = 'zmanim:theme';
+const THEME_MODES = ['auto', 'day', 'night'];
+
+const THEME_UI = {
+  auto: { icon: 'i-theme-auto', label: 'אוטומטית (לפי השעה)' },
+  day: { icon: 'i-sun', label: 'בהירה' },
+  night: { icon: 'i-moon', label: 'כהה' }
+};
+
+// צבע סרגל המערכת בדפדפני מובייל - חייב להתאים לראש הגרדיאנט של הערכה.
+const THEME_COLORS = { day: '#cdeefd', night: '#0f2027' };
+
+const themeState = {
+  preference: 'auto',
+  // הערכה הנגזרת מהשמש. null כל עוד לא התקבל מיקום.
+  automatic: null
+};
+
+function readThemePreference() {
+  try {
+    const stored = localStorage.getItem(THEME_KEY);
+    return THEME_MODES.indexOf(stored) === -1 ? 'auto' : stored;
+  } catch (error) {
+    return 'auto';
+  }
+}
+
+function writeThemePreference(preference) {
+  try {
+    localStorage.setItem(THEME_KEY, preference);
+  } catch (error) {
+    // localStorage עשוי להיות חסום - ההעדפה פשוט לא תישמר בין הפעלות.
+  }
+}
+
+function resolvedTheme() {
+  if (themeState.preference !== 'auto') return themeState.preference;
+  if (themeState.automatic !== null) return themeState.automatic;
+  // עדיין אין מיקום: משאירים את מה ש-app-init.js קבע, בלי הבהוב מיותר.
+  return document.documentElement.classList.contains('night') ? 'night' : 'day';
+}
+
+function renderTheme() {
+  const theme = resolvedTheme();
+  const root = document.documentElement;
+
+  root.classList.remove('day', 'night');
+  root.classList.add(theme);
+
+  const meta = document.getElementById('theme-color-meta');
+  if (meta) meta.setAttribute('content', THEME_COLORS[theme]);
+
+  const button = document.getElementById('theme-button');
+  const iconUse = document.getElementById('theme-icon');
+  if (button && iconUse) {
+    const ui = THEME_UI[themeState.preference];
+    iconUse.setAttribute('href', '#' + ui.icon);
+    button.setAttribute('aria-label', `ערכת נושא: ${ui.label}. לחצו להחלפה`);
+    button.setAttribute('title', `ערכת נושא: ${ui.label}`);
+  }
+}
+
 function applyTheme(zmanType) {
-  document.body.classList.remove('day', 'night');
-  document.body.classList.add(zmanType === 'יום' ? 'day' : 'night');
+  themeState.automatic = zmanType === 'יום' ? 'day' : 'night';
+  renderTheme();
+}
+
+function initThemeButton() {
+  themeState.preference = readThemePreference();
+  renderTheme();
+
+  const button = document.getElementById('theme-button');
+  if (!button) return;
+
+  button.addEventListener('click', () => {
+    const nextIndex = (THEME_MODES.indexOf(themeState.preference) + 1) % THEME_MODES.length;
+    themeState.preference = THEME_MODES[nextIndex];
+    writeThemePreference(themeState.preference);
+    renderTheme();
+  });
 }
 
 function formatHM(date) {
@@ -340,7 +556,11 @@ function computeDailyZmanim(sunrise, sunset) {
     sofZmanShema: new Date(sunrise.getTime() + 3 * shaaZmanitMs),
     sofZmanTefila: new Date(sunrise.getTime() + 4 * shaaZmanitMs),
     minchaGedola: new Date(sunrise.getTime() + 6.5 * shaaZmanitMs),
-    plagHamincha: new Date(sunrise.getTime() + 10.75 * shaaZmanitMs)
+    plagHamincha: new Date(sunrise.getTime() + 10.75 * shaaZmanitMs),
+    // צאת הכוכבים בדקות קבועות אחרי השקיעה (מנהג ישראל), ולעומתו שיטת
+    // רבנו תם - 72 דקות זמניות, בבואה מדויקת של עלות השחר שלמעלה.
+    tzeitHakochavim: new Date(sunset.getTime() + TZEIT_MINUTES_AFTER_SUNSET * 60000),
+    tzeitRabbeinuTam: new Date(sunset.getTime() + 1.2 * shaaZmanitMs)
   };
 }
 
@@ -361,27 +581,110 @@ function displayDailyZmanim(now, times, prevTimes, nextTimes) {
 
   if (!daily) {
     DAILY_ZMAN_IDS.forEach(id => displayZmanCard(id, null, now));
+    clearNextZman();
     return;
   }
 
-  displayZmanCard('alot-hashachar', daily.alotHashachar, now);
-  displayZmanCard('misheyakir', daily.misheyakir, now);
-  displayZmanCard('sof-zman-shema', daily.sofZmanShema, now);
-  displayZmanCard('sof-zman-tefila', daily.sofZmanTefila, now);
-  displayZmanCard('chatzot-day', times.solarNoon, now);
-  displayZmanCard('mincha-gedola', daily.minchaGedola, now);
-  displayZmanCard('plag-hamincha', daily.plagHamincha, now);
-  displayZmanCard('chatzot-night', chatzotNight, now);
+  const cardZmanim = [
+    ['alot-hashachar', daily.alotHashachar],
+    ['misheyakir', daily.misheyakir],
+    ['sof-zman-shema', daily.sofZmanShema],
+    ['sof-zman-tefila', daily.sofZmanTefila],
+    ['chatzot-day', times.solarNoon],
+    ['mincha-gedola', daily.minchaGedola],
+    ['plag-hamincha', daily.plagHamincha],
+    ['tzeit-hakochavim', daily.tzeitHakochavim],
+    ['tzeit-rabbeinu-tam', daily.tzeitRabbeinuTam],
+    ['chatzot-night', chatzotNight]
+  ];
+
+  cardZmanim.forEach(([id, date]) => displayZmanCard(id, date, now));
+
+  // הנץ והשקיעה נכללים במועמדים לזמן הבא אף שאין להם קוביה משלהם -
+  // הם הזמנים המשמעותיים ביותר בחלקי היום שבהם אין זמן הלכתי קרוב יותר.
+  updateNextZman(now, cardZmanim.concat([
+    ['sunrise', times.sunrise],
+    ['sunset', times.sunset]
+  ]));
+}
+
+// ============================================================
+// "הזמן הבא"
+// ============================================================
+
+// הכרטיס שיש להדגיש עבור מפתח נתון. הנץ ושקיעה ממופים לקוביית
+// "זריחה ושקיעה", שהיא המקום שבו הם באמת מוצגים.
+function nextZmanTarget(key) {
+  if (key === 'sunrise' || key === 'sunset') {
+    return document.querySelector('.time-box.left');
+  }
+  const valueEl = document.getElementById(key);
+  return valueEl ? valueEl.closest('.zman-card') : null;
+}
+
+function highlightNextZman(key) {
+  document.querySelectorAll('.next').forEach(el => el.classList.remove('next'));
+  const target = key === null ? null : nextZmanTarget(key);
+  if (target) target.classList.add('next');
+}
+
+function formatCountdown(ms) {
+  const totalMinutes = Math.floor(ms / 60000);
+  if (totalMinutes < 1) return 'עוד פחות מדקה';
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  // "דקה" אחת נאמרת בלי המספר ובלי מקף ("שעה ודקה"), בשונה מריבוי ("שעה ו-12 דקות").
+  const minutesText = minutes === 1 ? 'דקה' : `${minutes} דקות`;
+
+  if (hours === 0) return `בעוד ${minutesText}`;
+
+  const hoursText = hours === 1 ? 'שעה' : (hours === 2 ? 'שעתיים' : `${hours} שעות`);
+  if (minutes === 0) return `בעוד ${hoursText}`;
+  return `בעוד ${hoursText} ${minutes === 1 ? 'ודקה' : 'ו-' + minutesText}`;
+}
+
+function clearNextZman() {
+  const section = document.getElementById('next-zman');
+  if (section) section.hidden = true;
+  highlightNextZman(null);
+}
+
+function updateNextZman(now, candidates) {
+  const section = document.getElementById('next-zman');
+  if (!section) return;
+
+  let bestKey = null;
+  let bestDate = null;
+
+  for (const [key, date] of candidates) {
+    if (!isValidDate(date) || date <= now) continue;
+    if (bestDate === null || date < bestDate) {
+      bestKey = key;
+      bestDate = date;
+    }
+  }
+
+  if (bestKey === null) {
+    clearNextZman();
+    return;
+  }
+
+  section.hidden = false;
+  document.getElementById('next-zman-name').textContent = ZMAN_LABELS[bestKey] || '';
+  document.getElementById('next-zman-time').textContent = formatHM(bestDate);
+  document.getElementById('next-zman-countdown').textContent = formatCountdown(bestDate - now);
+  highlightNextZman(bestKey);
 }
 
 function toRad(deg) { return deg * Math.PI / 180; }
 function toDeg(rad) { return rad * 180 / Math.PI; }
 
-// זווית (bearing) גיאוגרפית ראשונית ממיקום נתון לכותל המערבי, על פני מעגל גדול (great circle).
-function getWesternWallBearing(latitude, longitude) {
+// זווית (bearing) גיאוגרפית ראשונית ממיקום נתון למקום המקדש, על פני מעגל גדול (great circle).
+function getTempleMountBearing(latitude, longitude) {
   const phi1 = toRad(latitude);
-  const phi2 = toRad(WESTERN_WALL_POSITION.latitude);
-  const deltaLambda = toRad(WESTERN_WALL_POSITION.longitude - longitude);
+  const phi2 = toRad(FOUNDATION_STONE_POSITION.latitude);
+  const deltaLambda = toRad(FOUNDATION_STONE_POSITION.longitude - longitude);
 
   const theta = Math.atan2(
     Math.sin(deltaLambda) * Math.cos(phi2),
@@ -391,22 +694,54 @@ function getWesternWallBearing(latitude, longitude) {
   return (toDeg(theta) + 360) % 360;
 }
 
-// מסובבים את החץ כך שיצביע תמיד לכיוון הכותל המערבי: אם יש כיוון מכשיר חי (ממצפן/מגנטומטר),
+// מרחק זוויתי שמתחתיו נחשב שהמכשיר כבר מכוון למקום המקדש.
+const COMPASS_ALIGNED_DEGREES = 5;
+
+// מסובבים את החץ כך שיצביע תמיד לכיוון מקום המקדש: אם יש כיוון מכשיר חי (ממצפן/מגנטומטר),
 // מפצים על הסיבוב של המכשיר עצמו; אחרת מציגים את הזווית הגיאוגרפית הסטטית בלבד.
 function updateCompassNeedle() {
   const arrow = document.getElementById('compass-arrow');
   if (!arrow || state.latitude === null || state.longitude === null) return;
 
-  const bearing = getWesternWallBearing(state.latitude, state.longitude);
+  const bearing = getTempleMountBearing(state.latitude, state.longitude);
   const rotation = deviceHeading === null ? bearing : (bearing - deviceHeading + 360) % 360;
   arrow.style.transform = `rotate(${rotation}deg)`;
+
+  updateCompassReadout(bearing);
+}
+
+// המספר הגדול בכרטיס הוא האזימוט למקום המקדש - נתון קבוע למיקום נתון, שאינו
+// משתנה כשמסובבים את המכשיר (וכך צריך להיות: זה הערך שמצמידים למצפן
+// פיזי). לכן במצפן החי נדרשת קריאה נפרדת שכן מתעדכנת: כמה לסובב ולאן.
+function updateCompassReadout(bearing) {
+  const readout = document.getElementById('compass-live-readout');
+  const compass = document.querySelector('.compass');
+  if (!readout) return;
+
+  if (deviceHeading === null) {
+    readout.hidden = true;
+    if (compass) compass.classList.remove('aligned');
+    return;
+  }
+
+  // ההפרש הקצר ביותר בטווח -180..180: חיובי = לסובב עם כיוון השעון (ימינה).
+  const delta = ((bearing - deviceHeading + 540) % 360) - 180;
+  const aligned = Math.abs(delta) <= COMPASS_ALIGNED_DEGREES;
+
+  readout.hidden = false;
+  readout.classList.toggle('aligned', aligned);
+  if (compass) compass.classList.toggle('aligned', aligned);
+
+  readout.textContent = aligned
+    ? 'אתם פונים לכיוון מקום המקדש'
+    : `סובבו ${Math.round(Math.abs(delta))}° ${delta > 0 ? 'ימינה' : 'שמאלה'}`;
 }
 
 function displayCompassCard(latitude, longitude) {
   const degreesEl = document.getElementById('compass-degrees');
   if (!degreesEl) return;
 
-  const bearing = getWesternWallBearing(latitude, longitude);
+  const bearing = getTempleMountBearing(latitude, longitude);
   degreesEl.textContent = `${bearing.toFixed(1)}°`;
   updateCompassNeedle();
 }
@@ -448,7 +783,7 @@ function startLiveCompass() {
   window.addEventListener('deviceorientationabsolute', handleOrientationEvent);
   window.addEventListener('deviceorientation', handleOrientationEvent);
 
-  setCompassStatus('מצפן חי פעיל 🟢');
+  setCompassStatus('מצפן חי פעיל');
   const hint = document.getElementById('compass-hint');
   if (hint) hint.textContent = 'החץ עוקב אחרי כיוון המכשיר בזמן אמת - סובבו את הטלפון עד שהחץ יצביע כלפי מעלה';
   const button = document.getElementById('compass-live-toggle');
@@ -590,44 +925,52 @@ function updateDateBar() {
   });
 
   const hebrew = getFormattedHebrewDate(now);
-  document.getElementById('date-bar').textContent = `${gregorian} | ${hebrew}`;
+  document.getElementById('date-bar-text').textContent = `${gregorian} | ${hebrew}`;
 }
 
 function initMenu() {
-  const menuToggle = document.querySelector('.menu-toggle');
+  const menuToggle = document.getElementById('menu-toggle');
   const menuClose = document.querySelector('.menu-close');
-  const sideMenu = document.querySelector('.side-menu');
+  const sideMenu = document.getElementById('side-menu');
   const overlay = document.querySelector('.overlay');
 
-  function toggleMenu() {
-    sideMenu.classList.toggle('active');
-    overlay.classList.toggle('active');
+  function setMenuOpen(open) {
+    sideMenu.classList.toggle('active', open);
+    overlay.classList.toggle('active', open);
+
+    sideMenu.setAttribute('aria-hidden', open ? 'false' : 'true');
+    menuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    menuToggle.setAttribute('aria-label', open ? 'סגירת התפריט' : 'פתיחת התפריט');
+
+    // החזרת המיקוד: בפתיחה לכפתור הסגירה, ובסגירה לכפתור שממנו נפתח
+    // התפריט - אחרת משתמש מקלדת "מאבד" את מקומו בדף.
+    if (open) {
+      menuClose.focus();
+    } else if (document.activeElement && sideMenu.contains(document.activeElement)) {
+      menuToggle.focus();
+    }
   }
 
-  function closeMenu() {
-    sideMenu.classList.remove('active');
-    overlay.classList.remove('active');
-  }
+  menuToggle.addEventListener('click', () => setMenuOpen(!sideMenu.classList.contains('active')));
+  menuClose.addEventListener('click', () => setMenuOpen(false));
+  overlay.addEventListener('click', () => setMenuOpen(false));
 
-  menuToggle.addEventListener('click', toggleMenu);
-  menuClose.addEventListener('click', toggleMenu);
-  overlay.addEventListener('click', toggleMenu);
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && sideMenu.classList.contains('active')) {
+      setMenuOpen(false);
+    }
+  });
 
   document.querySelector('.menu-item.active a').addEventListener('click', event => {
     event.preventDefault();
-    closeMenu();
-  });
-
-  // דפים שטרם נבנו - מונעים ניווט לקישור שבור עד שהם יעלו לאוויר.
-  document.querySelectorAll('.menu-item.soon a').forEach(link => {
-    link.addEventListener('click', event => event.preventDefault());
+    setMenuOpen(false);
   });
 }
 
 function initRefreshButton() {
   const button = document.querySelector('.refresh-button');
   button.addEventListener('click', () => {
-    button.style.transform = 'rotate(360deg)';
+    button.disabled = true;
 
     // מנקים את כל מטמוני ה-Service Worker לפני הרענון, כדי שהכפתור תמיד יביא
     // גרסה טרייה של כל הקבצים - גם script.js/style.css, שמוגשים כרגיל לפי
@@ -682,9 +1025,11 @@ function init() {
   updateDateBar();
   updateCurrentTime();
   startLiveUpdates();
+  initThemeButton();
   initMenu();
   initRefreshButton();
   initCompassLiveToggle();
+  initLocationRetry();
   requestLocation();
 }
 
