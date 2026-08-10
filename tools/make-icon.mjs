@@ -28,7 +28,7 @@ const arg = (name, fallback) => {
 //   X     — Legio X Fretensis, garrisoned in Jerusalem, which built and
 //           maintained the roads these milestones marked.
 //   XVIII — the eighteen minutes of a halachic mil, which also reads as ח״י.
-const NUMERAL = arg('numeral', 'X');
+const NUMERAL = arg('numeral', 'XVIII');
 
 // A short numeral gets a bigger, bolder carving; a long one has to shrink to
 // stay inside the column.
@@ -68,15 +68,28 @@ function glyphPath(ch, x, top, bot, w, stroke) {
   }
 }
 
-function romanNumeral(text, cx, cy, h, stroke, color) {
+function measure(chars, h, stroke) {
+  const widths = chars.map((ch) => (GLYPH_WIDTH[ch] === 0 ? stroke : GLYPH_WIDTH[ch] * h));
+  return { widths, total: widths.reduce((a, b) => a + b, 0) + h * 0.16 * (chars.length - 1) };
+}
+
+// `maxWidth` keeps a long numeral inside the column instead of running over its
+// edges. Every dimension scales with `h`, so a single factor fits the whole run.
+function romanNumeral(text, cx, cy, h, stroke, color, maxWidth) {
   const chars = [...text.toUpperCase()];
-  const widthOf = (ch) => {
+  for (const ch of chars) {
     if (!(ch in GLYPH_WIDTH)) throw new Error(`no glyph for "${ch}"`);
-    return GLYPH_WIDTH[ch] === 0 ? stroke : GLYPH_WIDTH[ch] * h;
-  };
+  }
+
+  let { widths, total } = measure(chars, h, stroke);
+  if (maxWidth && total > maxWidth) {
+    const k = maxWidth / total;
+    h *= k;
+    stroke *= k;
+    ({ widths, total } = measure(chars, h, stroke));
+  }
+
   const gap = h * 0.16;
-  const widths = chars.map(widthOf);
-  const total = widths.reduce((a, b) => a + b, 0) + gap * (chars.length - 1);
   const top = cy - h / 2;
   const bot = cy + h / 2;
 
@@ -137,7 +150,7 @@ function dusk(s) {
   <rect x="${C - plinthHalfW}" y="${plinthTop}" width="${plinthHalfW * 2}" height="${s(30)}" rx="${s(5)}" fill="#0A1526"/>
   <path d="${col}" fill="#0A1526"/>
   <path d="${col}" fill="none" stroke="#FFCF8A" stroke-width="${s(3)}" opacity="0.5"/>
-  ${romanNumeral(NUMERAL, C, C + s(14), num.h, num.stroke, '#F6C97E')}`;
+  ${romanNumeral(NUMERAL, C, C + s(14), num.h, num.stroke, '#F6C97E', capR * 1.6)}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -198,7 +211,7 @@ function sundial(s) {
   <rect x="${C - plinthHalfW}" y="${plinthTop}" width="${plinthHalfW * 2}" height="${s(32)}" rx="${s(4)}" fill="#8A6845"/>
   <path d="${col}" fill="url(#stone)"/>
   <rect x="${C - capR}" y="${capY + capR * 0.55}" width="${capR * 2}" height="${s(3)}" fill="#6A4E34" opacity="0.35"/>
-  ${romanNumeral(NUMERAL, C, C + s(6), num.h, num.stroke, '#5B4127')}`;
+  ${romanNumeral(NUMERAL, C, C + s(6), num.h, num.stroke, '#5B4127', capR * 1.6)}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -219,7 +232,7 @@ function flat(s) {
   <rect x="0" y="${groundY}" width="${SIZE}" height="${SIZE - groundY}" fill="#10203C"/>
   <rect x="${C - plinthHalfW}" y="${C + s(88)}" width="${plinthHalfW * 2}" height="${s(34)}" rx="${s(6)}" fill="#F4E7CE"/>
   <path d="${col}" fill="#F4E7CE"/>
-  ${romanNumeral(NUMERAL, C, C + s(16), num.h, num.stroke, '#16294D')}`;
+  ${romanNumeral(NUMERAL, C, C + s(16), num.h, num.stroke, '#16294D', capR * 1.6)}`;
 }
 
 const variants = { dusk, sundial, flat };
