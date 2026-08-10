@@ -3,8 +3,12 @@
 // מיקום ברירת מחדל - ירושלים (בשימוש כשאין הרשאת מיקום ואין זיהוי לפי IP)
 const DEFAULT_POSITION = { latitude: 31.7683, longitude: 35.2137 };
 
-// כותל המערבי - נקודת היעד לחישוב כיוון התפילה (לא ירושלים באופן כללי)
-const WESTERN_WALL_POSITION = { latitude: 31.776930, longitude: 35.234524 };
+// אבן השתייה שבהר הבית - נקודת היעד לחישוב כיוון התפילה.
+// לפי שולחן ערוך או"ח צ"ד א', היעד הוא מקום המקדש ובית קודשי הקודשים, ולא
+// הכותל המערבי (שהוא הקיר התומך המערבי של ההר, כ-140 מ' ממערב לנקודה הזו).
+// מחוץ לירושלים ההפרש בין שתי הנקודות זניח - כשליש מעלה מבית אל וכ-0.14
+// מעלות מתל אביב - אך בתוך ירושלים הוא מגיע לכמה מעלות ואז הוא כן משמעותי.
+const FOUNDATION_STONE_POSITION = { latitude: 31.778040, longitude: 35.235400 };
 
 // מזהי הקוביות ההלכתיות המבוססות על שעה זמנית (לצורך ניקוי בזמן שאין זריחה/שקיעה)
 const DAILY_ZMAN_IDS = [
@@ -618,11 +622,11 @@ function updateNextZman(now, candidates) {
 function toRad(deg) { return deg * Math.PI / 180; }
 function toDeg(rad) { return rad * 180 / Math.PI; }
 
-// זווית (bearing) גיאוגרפית ראשונית ממיקום נתון לכותל המערבי, על פני מעגל גדול (great circle).
-function getWesternWallBearing(latitude, longitude) {
+// זווית (bearing) גיאוגרפית ראשונית ממיקום נתון למקום המקדש, על פני מעגל גדול (great circle).
+function getTempleMountBearing(latitude, longitude) {
   const phi1 = toRad(latitude);
-  const phi2 = toRad(WESTERN_WALL_POSITION.latitude);
-  const deltaLambda = toRad(WESTERN_WALL_POSITION.longitude - longitude);
+  const phi2 = toRad(FOUNDATION_STONE_POSITION.latitude);
+  const deltaLambda = toRad(FOUNDATION_STONE_POSITION.longitude - longitude);
 
   const theta = Math.atan2(
     Math.sin(deltaLambda) * Math.cos(phi2),
@@ -632,23 +636,23 @@ function getWesternWallBearing(latitude, longitude) {
   return (toDeg(theta) + 360) % 360;
 }
 
-// מרחק זוויתי שמתחתיו נחשב שהמכשיר כבר מכוון לכותל.
+// מרחק זוויתי שמתחתיו נחשב שהמכשיר כבר מכוון למקום המקדש.
 const COMPASS_ALIGNED_DEGREES = 5;
 
-// מסובבים את החץ כך שיצביע תמיד לכיוון הכותל המערבי: אם יש כיוון מכשיר חי (ממצפן/מגנטומטר),
+// מסובבים את החץ כך שיצביע תמיד לכיוון מקום המקדש: אם יש כיוון מכשיר חי (ממצפן/מגנטומטר),
 // מפצים על הסיבוב של המכשיר עצמו; אחרת מציגים את הזווית הגיאוגרפית הסטטית בלבד.
 function updateCompassNeedle() {
   const arrow = document.getElementById('compass-arrow');
   if (!arrow || state.latitude === null || state.longitude === null) return;
 
-  const bearing = getWesternWallBearing(state.latitude, state.longitude);
+  const bearing = getTempleMountBearing(state.latitude, state.longitude);
   const rotation = deviceHeading === null ? bearing : (bearing - deviceHeading + 360) % 360;
   arrow.style.transform = `rotate(${rotation}deg)`;
 
   updateCompassReadout(bearing);
 }
 
-// המספר הגדול בכרטיס הוא האזימוט לכותל - נתון קבוע למיקום נתון, שאינו
+// המספר הגדול בכרטיס הוא האזימוט למקום המקדש - נתון קבוע למיקום נתון, שאינו
 // משתנה כשמסובבים את המכשיר (וכך צריך להיות: זה הערך שמצמידים למצפן
 // פיזי). לכן במצפן החי נדרשת קריאה נפרדת שכן מתעדכנת: כמה לסובב ולאן.
 function updateCompassReadout(bearing) {
@@ -671,7 +675,7 @@ function updateCompassReadout(bearing) {
   if (compass) compass.classList.toggle('aligned', aligned);
 
   readout.textContent = aligned
-    ? 'אתם פונים לכיוון הכותל'
+    ? 'אתם פונים לכיוון מקום המקדש'
     : `סובבו ${Math.round(Math.abs(delta))}° ${delta > 0 ? 'ימינה' : 'שמאלה'}`;
 }
 
@@ -679,7 +683,7 @@ function displayCompassCard(latitude, longitude) {
   const degreesEl = document.getElementById('compass-degrees');
   if (!degreesEl) return;
 
-  const bearing = getWesternWallBearing(latitude, longitude);
+  const bearing = getTempleMountBearing(latitude, longitude);
   degreesEl.textContent = `${bearing.toFixed(1)}°`;
   updateCompassNeedle();
 }
