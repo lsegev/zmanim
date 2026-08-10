@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mil-v0.8.0';
+const CACHE_NAME = 'mil-v0.9.0';
 
 // נתיבים יחסיים בלבד: הם נפתרים מול scope של ה-Service Worker (למשל /zmanim/),
 // ולכן עובדים גם כשהאתר מתפרסם בתת-נתיב כמו GitHub Pages.
@@ -9,6 +9,9 @@ const ASSETS_TO_CACHE = [
   'style.css',
   'script.js',
   'app-init.js',
+  'menu.js',
+  'about.html',
+  'about.js',
   'vendor/suncalc.js',
   'manifest.json',
   'icon-192.png',
@@ -46,15 +49,29 @@ self.addEventListener('activate', event => {
 
 // ניווטים: רשת קודם, כדי שגרסה חדשה של הדף תגיע למשתמש מיד ולא רק אחרי
 // החלפת CACHE_NAME. אם אין רשת - מגישים את הדף מהמטמון, ולבסוף את offline.html.
+//
+// הדף נשמר ונשלף לפי הכתובת שהתבקשה בפועל ולא תחת 'index.html' קבוע: אחרת
+// ביקור ב-about.html היה דורס את דף הבית במטמון, וגלישה אליו ללא רשת הייתה
+// מגישה את דף הבית במקומו.
+function pageKeyFor(request) {
+  const path = new URL(request.url).pathname;
+  return path.endsWith('/') ? path + 'index.html' : path;
+}
+
 function handleNavigate(request) {
+  const key = pageKeyFor(request);
+
   return fetch(request)
     .then(response => {
       const copy = response.clone();
-      caches.open(CACHE_NAME).then(cache => cache.put('index.html', copy));
+      caches.open(CACHE_NAME).then(cache => cache.put(key, copy));
       return response;
     })
     .catch(() =>
-      caches.match('index.html')
+      caches.match(key)
+        // נכסי ההתקנה נשמרים בנתיבים יחסיים ('index.html'), ולכן ההתאמה
+        // המוחלטת עשויה להחטיא בביקור הראשון שאינו מקוון.
+        .then(cached => cached || caches.match(key.replace(/^\//, '')))
         .then(cached => cached || caches.match(OFFLINE_URL))
         .then(cached => cached || new Response('אין חיבור לאינטרנט', {
           status: 503,
