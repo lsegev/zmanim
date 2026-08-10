@@ -5,7 +5,7 @@
    טוקנים עיצוביים
    ------------------------------------------------------------
    כל צבע, רדיוס וצל מוגדרים כאן פעם אחת. הטוקנים התלויים בערכה
-   (יום/לילה) מוגדרים על body.day / body.night, ולכן כל קומפוננטה
+   (יום/לילה) מוגדרים על html.day / html.night, ולכן כל קומפוננטה
    חדשה מקבלת התנהגות נכונה בשתי הערכות בלי override נפרד.
    ============================================================ */
 :root {
@@ -24,7 +24,7 @@
 }
 
 /* ערכת יום */
-body.day {
+:root.day {
   --bg: linear-gradient(to bottom, #cdeefd, #ffffff);
   --text: #1a1a1a;
   --muted: #4c5a63;
@@ -54,7 +54,7 @@ body.day {
 }
 
 /* ערכת לילה */
-body.night {
+:root.night {
   --bg: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
   --text: #f2f2f2;
   --muted: #aebfc8;
@@ -90,6 +90,35 @@ body.night {
 .num {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
+}
+
+/* ============================================================
+   אייקונים
+   ------------------------------------------------------------
+   סט קווי אחד שיורש את צבע הטקסט. הגודל ב-em, כך שאייקון תמיד
+   מתכייל לגודל הטקסט שלצדו.
+   ============================================================ */
+.icon-sprite {
+  display: none;
+}
+
+.icon {
+  width: 1.15em;
+  height: 1.15em;
+  flex-shrink: 0;
+  vertical-align: -0.18em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* מיקוד מקלדת גלוי בכל רכיב אינטראקטיבי */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 body {
@@ -285,12 +314,6 @@ body {
   color: var(--muted);
 }
 
-.icon {
-  font-size: 1.4rem;
-  margin-inline-end: 6px;
-  vertical-align: middle;
-}
-
 /* ============================================================
    סקציות זמני היום
    ============================================================ */
@@ -301,6 +324,10 @@ body {
 }
 
 .zman-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 7px;
   margin: 0 0 12px;
   font-size: 0.95rem;
   font-weight: 600;
@@ -309,10 +336,19 @@ body {
   color: var(--muted);
 }
 
+/* מספר עמודות קבוע ולא auto-fit: עם auto-fit רוחב המסך קבע כמה כרטיסים
+   נכנסים בשורה, וסקציה בת שישה כרטיסים יכלה להישבר ל-5+1 עם יתום בודד
+   בשורה שנייה. 2 עמודות בנייד ו-4 ברוחב גדול שומרות על שורות מלאות. */
 .zman-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+@media (min-width: 620px) {
+  .zman-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .zman-card {
@@ -352,8 +388,9 @@ body {
 }
 
 .zman-card h4 .icon {
-  font-size: 1.05rem;
-  margin-inline-end: 0;
+  width: 1.25em;
+  height: 1.25em;
+  color: var(--accent);
 }
 
 .zman-card > div {
@@ -434,7 +471,9 @@ body {
 }
 
 .compass-live-button:not([hidden]) {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   margin-top: 10px;
   padding: 8px 14px;
   border: none;
@@ -474,6 +513,11 @@ body {
 .date-bar {
   position: absolute;
   top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
   width: 90%;
   max-width: 900px;
   box-sizing: border-box;
@@ -489,29 +533,76 @@ body {
   z-index: 90;
 }
 
+.date-bar-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.date-bar-location[hidden] {
+  display: none;
+}
+
+.date-bar-location .icon {
+  width: 1em;
+  height: 1em;
+  color: var(--accent);
+}
+
+/* ============================================================
+   כפתורי סרגל עליון
+   ------------------------------------------------------------
+   רענון, ערכת נושא ותפריט חולקים קומפוננטה אחת: אותו גודל, אותו
+   רדיוס ואותה שפת אייקון. קודם היו שלושה div-ים בשלושה עיצובים,
+   בלי מיקוד מקלדת ובלי שם נגיש.
+   ============================================================ */
+.icon-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+}
+
+.icon-button .icon {
+    width: 20px;
+    height: 20px;
+}
+
+.icon-button:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+}
+
+.icon-button:active {
+    transform: scale(0.95);
+}
+
+.top-actions {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    gap: 8px;
+    z-index: 100;
+}
+
 .menu-toggle {
     position: fixed;
     top: 20px;
     right: 20px;
-    font-size: 24px;
-    cursor: pointer;
     z-index: 100;
-    background: var(--surface);
-    color: var(--text);
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(6px);
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow-sm);
-}
-
-.menu-toggle:hover {
-    transform: scale(1.05);
-    box-shadow: var(--shadow-md);
 }
 
 .side-menu {
@@ -553,21 +644,15 @@ body {
 }
 
 .menu-close {
-    font-size: 24px;
-    cursor: pointer;
     width: 36px;
     height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: all 0.3s ease;
     background: var(--chip);
+    box-shadow: none;
 }
 
 .menu-close:hover {
     background: var(--chip-hover);
-    transform: scale(1.05);
+    box-shadow: none;
 }
 
 .menu-content {
@@ -697,11 +782,16 @@ body {
 }
 
 .menu-icon {
-    font-size: 1.4em;
+    width: 22px;
+    height: 22px;
     margin-left: 16px;
-    width: 24px;
-    text-align: center;
-    opacity: 0.9;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    color: var(--accent);
 }
 
 .menu-text {
@@ -711,33 +801,6 @@ body {
     flex-grow: 1;
 }
 
-.refresh-button {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    cursor: pointer;
-    z-index: 100;
-    background: var(--surface);
-    color: var(--text);
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(8px);
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow-sm);
-}
-
-.refresh-button:hover {
-    transform: scale(1.05);
-    box-shadow: var(--shadow-md);
-}
-
-.refresh-button:active {
-    transform: scale(0.95);
-}
 
 .refresh-button svg {
     transition: transform 0.3s ease;
@@ -762,6 +825,7 @@ body {
   }
 
   .zman-section-title {
+    justify-content: center;
     text-align: center;
   }
 
@@ -803,7 +867,8 @@ body {
   }
 
   .zman-card h4 .icon {
-    font-size: 0.95rem;
+    width: 1.15em;
+    height: 1.15em;
   }
 
   .zman-card > div {
@@ -823,7 +888,8 @@ body {
     }
 
     .menu-icon {
-        font-size: 1.6em;
+        width: 24px;
+        height: 24px;
         margin-left: 20px;
     }
 
@@ -831,19 +897,24 @@ body {
         font-size: 1.2em;
     }
 
-    .refresh-button {
-        top: 16px;
-        left: 16px;
+    .icon-button {
         width: 36px;
         height: 36px;
+    }
+
+    .icon-button .icon {
+        width: 18px;
+        height: 18px;
+    }
+
+    .top-actions {
+        top: 16px;
+        left: 16px;
     }
 
     .menu-toggle {
         top: 16px;
         right: 16px;
-        width: 36px;
-        height: 36px;
-        font-size: 20px;
     }
 
     .date-bar {
