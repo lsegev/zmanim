@@ -51,6 +51,7 @@
   --menu-item-active: rgba(255, 255, 255, 0.6);
 
   --needle: #e74c3c;
+  --success: #1a7f4b;
 }
 
 /* ערכת לילה */
@@ -83,6 +84,7 @@
   --menu-item-active: rgba(0, 0, 0, 0.6);
 
   --needle: #ff6b5a;
+  --success: #5fd39b;
 }
 
 /* ספרות ברוחב אחיד: בלי זה מונה השניות "רוקד" בכל טיק, וזמנים
@@ -468,6 +470,27 @@ body {
 #compass-degrees {
   font-size: 1.6rem;
   font-weight: 700;
+}
+
+.compass-readout {
+  display: block;
+  margin-top: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.compass-readout[hidden] {
+  display: none;
+}
+
+.compass-readout.aligned {
+  color: var(--success);
+}
+
+/* המחוג נצבע ירוק ברגע שהמכשיר מכוון - אישור שאפשר לראות בלי לקרוא */
+.compass.aligned .compass-needle {
+  fill: var(--success);
 }
 
 .compass-live-button:not([hidden]) {

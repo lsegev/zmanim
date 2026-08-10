@@ -632,6 +632,9 @@ function getWesternWallBearing(latitude, longitude) {
   return (toDeg(theta) + 360) % 360;
 }
 
+// מרחק זוויתי שמתחתיו נחשב שהמכשיר כבר מכוון לכותל.
+const COMPASS_ALIGNED_DEGREES = 5;
+
 // מסובבים את החץ כך שיצביע תמיד לכיוון הכותל המערבי: אם יש כיוון מכשיר חי (ממצפן/מגנטומטר),
 // מפצים על הסיבוב של המכשיר עצמו; אחרת מציגים את הזווית הגיאוגרפית הסטטית בלבד.
 function updateCompassNeedle() {
@@ -641,6 +644,35 @@ function updateCompassNeedle() {
   const bearing = getWesternWallBearing(state.latitude, state.longitude);
   const rotation = deviceHeading === null ? bearing : (bearing - deviceHeading + 360) % 360;
   arrow.style.transform = `rotate(${rotation}deg)`;
+
+  updateCompassReadout(bearing);
+}
+
+// המספר הגדול בכרטיס הוא האזימוט לכותל - נתון קבוע למיקום נתון, שאינו
+// משתנה כשמסובבים את המכשיר (וכך צריך להיות: זה הערך שמצמידים למצפן
+// פיזי). לכן במצפן החי נדרשת קריאה נפרדת שכן מתעדכנת: כמה לסובב ולאן.
+function updateCompassReadout(bearing) {
+  const readout = document.getElementById('compass-live-readout');
+  const compass = document.querySelector('.compass');
+  if (!readout) return;
+
+  if (deviceHeading === null) {
+    readout.hidden = true;
+    if (compass) compass.classList.remove('aligned');
+    return;
+  }
+
+  // ההפרש הקצר ביותר בטווח -180..180: חיובי = לסובב עם כיוון השעון (ימינה).
+  const delta = ((bearing - deviceHeading + 540) % 360) - 180;
+  const aligned = Math.abs(delta) <= COMPASS_ALIGNED_DEGREES;
+
+  readout.hidden = false;
+  readout.classList.toggle('aligned', aligned);
+  if (compass) compass.classList.toggle('aligned', aligned);
+
+  readout.textContent = aligned
+    ? 'אתם פונים לכיוון הכותל'
+    : `סובבו ${Math.round(Math.abs(delta))}° ${delta > 0 ? 'ימינה' : 'שמאלה'}`;
 }
 
 function displayCompassCard(latitude, longitude) {
@@ -689,7 +721,7 @@ function startLiveCompass() {
   window.addEventListener('deviceorientationabsolute', handleOrientationEvent);
   window.addEventListener('deviceorientation', handleOrientationEvent);
 
-  setCompassStatus('מצפן חי פעיל 🟢');
+  setCompassStatus('מצפן חי פעיל');
   const hint = document.getElementById('compass-hint');
   if (hint) hint.textContent = 'החץ עוקב אחרי כיוון המכשיר בזמן אמת - סובבו את הטלפון עד שהחץ יצביע כלפי מעלה';
   const button = document.getElementById('compass-live-toggle');
