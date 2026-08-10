@@ -51,6 +51,9 @@ const CITY_CACHE_PREFIX = 'zmanim:city:';
 const state = {
   latitude: null,
   longitude: null,
+  // מקור המיקום: 'gps' (הרשאת דפדפן), 'ip' (זיהוי לפי כתובת IP) או
+  // 'default' (ירושלים, כשגם זה נכשל). רק 'gps' מדויק מספיק לכיוון תפילה.
+  locationSource: null,
   // המטמון של זמני השמש מפתחו הוא התאריך + המיקום, כך שהוא מתרענן
   // אוטומטית בחצות ואינו "נתקע" על התמונה שהתקבלה בטעינת הדף.
   sunTimesCache: new Map()
@@ -89,7 +92,7 @@ function updateCurrentTime() {
 function requestLocation() {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
-      position => handleLocation(position.coords.latitude, position.coords.longitude),
+      position => handleLocation(position.coords.latitude, position.coords.longitude, 'gps'),
       error => {
         console.log('שגיאה בקבלת מיקום מהדפדפן:', error && error.message);
         tryIPFallback();
@@ -120,27 +123,82 @@ function tryIPFallback() {
       const latitude = Number(data.latitude);
       const longitude = Number(data.longitude);
       if (!isValidCoordinate(latitude, longitude)) throw new Error('קואורדינטות לא תקינות');
-      handleLocation(latitude, longitude);
+      handleLocation(latitude, longitude, 'ip');
     })
     .catch(error => {
       console.log('שגיאה בקבלת מיקום מ-IP:', error && error.message);
-      handleLocation(DEFAULT_POSITION.latitude, DEFAULT_POSITION.longitude);
+      handleLocation(DEFAULT_POSITION.latitude, DEFAULT_POSITION.longitude, 'default');
     });
 }
 
-function handleLocation(latitude, longitude) {
+function handleLocation(latitude, longitude, source) {
   if (!isValidCoordinate(latitude, longitude)) {
     console.log('התקבלו קואורדינטות לא תקינות, נעשה שימוש בברירת המחדל');
     latitude = DEFAULT_POSITION.latitude;
     longitude = DEFAULT_POSITION.longitude;
+    source = 'default';
   }
 
   state.latitude = latitude;
   state.longitude = longitude;
+  state.locationSource = source;
   state.sunTimesCache.clear();
 
+  updateLocationNotice();
   updateAll();
   updateCityName(latitude, longitude);
+}
+
+// מיקום שאינו מ-GPS פוגע בכיוון התפילה הרבה יותר מאשר בזמנים: זיהוי לפי IP
+// מצביע לרוב על עיר הספק ויכול להחטיא בעשרות קילומטרים, מה שמזיז את הזמנים
+// בדקות ספורות אך את הזווית לכיוון המקדש בעשרות מעלות.
+function updateLocationNotice() {
+  const approximate = state.locationSource !== 'gps';
+
+  const badge = document.getElementById('location-approx-badge');
+  if (badge) badge.hidden = !approximate;
+
+  const warning = document.getElementById('location-warning');
+  if (warning) warning.hidden = !approximate;
+}
+
+function setLocationRetryStatus(text) {
+  const status = document.getElementById('location-retry-status');
+  if (status) status.textContent = text;
+}
+
+function initLocationRetry() {
+  const button = document.getElementById('location-retry');
+  if (!button) return;
+
+  button.addEventListener('click', () => {
+    if (!navigator.geolocation) {
+      setLocationRetryStatus('הדפדפן אינו תומך באיתור מיקום');
+      return;
+    }
+
+    button.disabled = true;
+    setLocationRetryStatus('מאתר מיקום...');
+
+    // בקשה מפורשת של המשתמש, ולכן מבקשים מיקום טרי ומדויק ולא ערך מהמטמון.
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        button.disabled = false;
+        setLocationRetryStatus('');
+        handleLocation(position.coords.latitude, position.coords.longitude, 'gps');
+      },
+      error => {
+        console.log('בקשת מיקום חוזרת נכשלה:', error && error.message);
+        button.disabled = false;
+        // דחייה נזכרת בדפדפן: לחיצה נוספת לא תציג שוב חלון בקשה, ולכן
+        // ההודעה חייבת להסביר איפה מחזירים את ההרשאה ידנית.
+        setLocationRetryStatus(error && error.code === error.PERMISSION_DENIED
+          ? 'ההרשאה חסומה, והדפדפן לא ישאל שוב מעצמו. באייפון: כפתור "אA" בשורת הכתובת ← הגדרות אתר ← מיקום ← "שאל". אחר כך אפשר ללחוץ כאן שוב.'
+          : 'לא הצלחנו לאתר מיקום מדויק. כדאי לנסות שוב בחוץ או עם קליטה טובה יותר.');
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  });
 }
 
 // שם היישוב נוגע לכל הזמנים בעמוד ולכן הוא מוצג בפס התאריך, ולא בתוך
@@ -971,6 +1029,7 @@ function init() {
   initMenu();
   initRefreshButton();
   initCompassLiveToggle();
+  initLocationRetry();
   requestLocation();
 }
 

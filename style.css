@@ -52,6 +52,9 @@
 
   --needle: #e74c3c;
   --success: #1a7f4b;
+  --warn: #8a5300;
+  --warn-bg: rgba(255, 196, 90, 0.22);
+  --warn-line: rgba(200, 140, 20, 0.45);
 }
 
 /* ערכת לילה */
@@ -85,6 +88,9 @@
 
   --needle: #ff6b5a;
   --success: #5fd39b;
+  --warn: #ffcf87;
+  --warn-bg: rgba(255, 190, 80, 0.14);
+  --warn-line: rgba(255, 190, 80, 0.35);
 }
 
 /* ספרות ברוחב אחיד: בלי זה מונה השניות "רוקד" בכל טיק, וזמנים
@@ -569,6 +575,55 @@ body {
 
 .date-bar-location[hidden] {
   display: none;
+}
+
+/* תג "משוער" ליד שם היישוב: הסימן הגלובלי לכך שהמיקום לא הגיע מ-GPS */
+.location-badge {
+  padding: 1px 7px;
+  border-radius: 8px;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-line);
+  color: var(--warn);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.location-badge[hidden] {
+  display: none;
+}
+
+.location-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-line);
+  color: var(--text);
+  text-align: right;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.location-warning[hidden] {
+  display: none;
+}
+
+.location-warning > .icon {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  color: var(--warn);
+}
+
+.location-warning strong {
+  color: var(--warn);
+}
+
+.location-warning .compass-live-button {
+  margin-top: 10px;
 }
 
 .date-bar-location .icon {
