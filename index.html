@@ -145,6 +145,10 @@
       <path d="M1 20v-6h6" />
       <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
     </symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24">
+      <path d="M12 3.4 21.6 20.2H2.4L12 3.4Z" />
+      <path d="M12 9.6v4.3M12 16.9h.01" />
+    </symbol>
     <symbol id="i-theme-auto" viewBox="0 0 24 24">
       <circle cx="12" cy="12" r="8.6" />
       <path d="M12 3.4a8.6 8.6 0 0 1 0 17.2Z" fill="currentColor" stroke="none" />
@@ -221,6 +225,7 @@
     <span class="date-bar-location" id="location-name" hidden>
       <svg class="icon" aria-hidden="true"><use href="#i-pin" /></svg>
       <span id="location-name-text"></span>
+      <span class="location-badge" id="location-approx-badge" hidden>משוער</span>
     </span>
     <span id="date-bar-text">...</span>
   </div>
@@ -342,6 +347,18 @@
           <svg class="icon" aria-hidden="true"><use href="#i-compass" /></svg>הפעלת מצפן חי
         </button>
         <span id="compass-live-status" class="zman-note"></span>
+      </div>
+    </div>
+    <!-- מיקום שגוי פוגע בכיוון התפילה הרבה יותר מאשר בזמנים: טעות של
+         עשרות ק"מ מזיזה את הזריחה בדקות, אבל את הזווית בעשרות מעלות. -->
+    <div class="location-warning" id="location-warning" hidden>
+      <svg class="icon" aria-hidden="true"><use href="#i-alert" /></svg>
+      <div class="location-warning-body">
+        <strong>המיקום משוער</strong> - הוא נקבע לפי כתובת ה-IP ולא לפי GPS, ולכן הוא עלול
+        להיות רחוק עשרות קילומטרים. הזמנים יסטו בדקות ספורות, אך כיוון התפילה עלול לסטות
+        בעשרות מעלות.
+        <button type="button" id="location-retry" class="compass-live-button">אישור מיקום מדויק</button>
+        <span id="location-retry-status" class="zman-note"></span>
       </div>
     </div>
     <p class="zman-hint" id="compass-hint">הכיוון הגיאוגרפי לאבן השתייה שבהר הבית - יש להצמיד למצפן אמיתי לכיוון מדויק, או ללחוץ על "הפעלת מצפן חי"</p>
