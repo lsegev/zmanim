@@ -3,6 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!--
+    Content-Security-Policy: GitHub Pages אינו מאפשר להגדיר headers, ולכן המדיניות
+    מוגדרת כאן. אין 'unsafe-inline' - כל ה-JS וה-CSS נמצאים בקבצים חיצוניים.
+    connect-src מוגבל לשלושת שירותי המיקום שהאפליקציה באמת פונה אליהם.
+  -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self';
+    style-src 'self';
+    img-src 'self' data:;
+    font-src 'self';
+    manifest-src 'self';
+    connect-src 'self' https://nominatim.openstreetmap.org https://api.bigdatacloud.net https://ipapi.co;
+    base-uri 'none';
+    form-action 'none';
+    object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
   <meta name="theme-color" content="#ffffff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -36,42 +55,16 @@
   <link rel="canonical" href="https://lsegev.github.io/zmanim/">
 
   <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js')
-      .then(registration => {
-        console.log('ServiceWorker registration successful');
-        
-        // בדיקת עדכונים
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-          
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // יש עדכון חדש זמין
-              if (confirm('יש עדכון חדש זמין. האם ברצונך לעדכן עכשיו?')) {
-                newWorker.postMessage({ action: 'skipWaiting' });
-                window.location.reload();
-              }
-            }
-          });
-        });
-      })
-      .catch(err => {
-        console.log('ServiceWorker registration failed: ', err);
-      });
-  });
-}
-</script>
+  <script src="app-init.js"></script>
 </head>
-<body>
-  <div id="update-banner" style="display:none;position:fixed;bottom:0;width:100%;background:#ffd700;color:#333;padding:1em;text-align:center;z-index:10000;">
-    יש גרסה חדשה! <button onclick="location.reload(true)" style="margin-right:1em;">רענן עכשיו</button>
-  </div>  
+<!-- ברירת מחדל "day" כדי שתמיד יהיה רקע תקין, גם לפני שהמיקום מתקבל
+     וגם במקומות שבהם אין זריחה/שקיעה (קווי רוחב קוטביים). -->
+<body class="day">
+  <div id="update-banner" class="update-banner" hidden>
+    יש גרסה חדשה! <button id="update-button" type="button">רענן עכשיו</button>
+  </div>
   <div class="menu-toggle">☰</div>
-  <div class="refresh-button" onclick="refreshPage()">
+  <div class="refresh-button">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M23 4v6h-6"/>
       <path d="M1 20v-6h6"/>
@@ -86,76 +79,148 @@ if ('serviceWorker' in navigator) {
     <nav class="menu-content">
       <ul class="menu-list">
         <li class="menu-item active">
-          <a href="#" onclick="closeMenu()">
+          <a href="./">
             <span class="menu-icon">🏠</span>
             <span class="menu-text">דף הבית</span>
           </a>
         </li>
-        <li class="menu-item">
-          <a href="/shabbat">
+        <li class="menu-item soon">
+          <a href="./shabbat/" aria-disabled="true">
             <span class="menu-icon">🕯️</span>
             <span class="menu-text">זמני שבת</span>
+            <span class="menu-badge">בקרוב</span>
           </a>
         </li>
-        <li class="menu-item">
-          <a href="/important-dates">
+        <li class="menu-item soon">
+          <a href="./important-dates/" aria-disabled="true">
             <span class="menu-icon">📅</span>
             <span class="menu-text">תאריכים חשובים השבוע</span>
+            <span class="menu-badge">בקרוב</span>
           </a>
         </li>
-        <li class="menu-item">
-          <a href="/daily-study">
+        <li class="menu-item soon">
+          <a href="./daily-study/" aria-disabled="true">
             <span class="menu-icon">📚</span>
             <span class="menu-text">לימוד יומי</span>
+            <span class="menu-badge">בקרוב</span>
           </a>
         </li>
       </ul>
+      <p class="menu-note">
+        המיקום שלך משמש לחישוב זמני היום בלבד ונשלח לשירותי זיהוי מיקום חיצוניים
+        בדיוק מעוגל של כ-100 מטר. הוא אינו נשמר בשרת כלשהו.
+      </p>
     </nav>
   </div>
   <div class="overlay"></div>
   <div class="date-bar" id="date-bar">...</div>
+
+  <!-- הזמן ההלכתי הקרוב ביותר - התשובה לשאלה שבגללה פותחים את האפליקציה -->
+  <section class="next-zman" id="next-zman" hidden>
+    <div class="next-zman-side">
+      <span class="next-zman-label">הזמן הבא</span>
+      <span class="next-zman-name" id="next-zman-name">--</span>
+    </div>
+    <div class="next-zman-side end">
+      <span class="next-zman-time num" id="next-zman-time">--:--</span>
+      <span class="next-zman-countdown" id="next-zman-countdown">--</span>
+    </div>
+  </section>
+
   <div class="container">
     <div class="time-box right">
       <h2>השעה הנוכחית</h2>
-      <div id="current-time">--:--:--</div>
+      <div id="current-time" class="num">--:--:--</div>
     </div>
 
     <div class="time-box center">
       <h2>שעה זמנית</h2>
-      <div id="custom-time">--:--<br><span class="zman-type">--</span></div>
+      <div id="custom-time"><span class="zmanit-value num">--:--</span><span class="zman-type">--</span></div>
     </div>
 
     <div class="time-box left">
-      <h2>זריחה ושקיעה</h2>
+      <h2 id="sun-times-title">זריחה ושקיעה</h2>
       <div id="sun-times">--</div>
     </div>
   </div>
 
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js').then(reg => {
-        reg.onupdatefound = () => {
-          const installingWorker = reg.installing;
-          installingWorker.onstatechange = () => {
-            if (installingWorker.state === 'installed') {
-              if (navigator.serviceWorker.controller) {
-                document.getElementById('update-banner').style.display = 'block';
-                reg.waiting && reg.waiting.postMessage({ action: 'skipWaiting' });
-              }
-            }
-          };
-        };
-      });
-  
-      navigator.serviceWorker.addEventListener('controllerchange', function () {
-        window.location.reload();
-      });
-    }
-    </script>
-    
+  <section class="zman-section">
+    <h3 class="zman-section-title">זמני תפילה</h3>
+    <div class="zman-grid">
+      <div class="zman-card">
+        <h4><span class="icon">🌅</span>עלות השחר</h4>
+        <div id="alot-hashachar" class="num">--:--</div>
+        <span class="zman-note">72 דק' זמניות (שעה וחמישית) לפני הנץ</span>
+      </div>
+      <div class="zman-card">
+        <h4><span class="icon">👁️</span>משיכיר</h4>
+        <div id="misheyakir" class="num">--:--</div>
+        <span class="zman-note">50 דק' זמניות לפני הנץ</span>
+      </div>
+      <div class="zman-card">
+        <h4><span class="icon">📖</span>סוף זמן ק"ש</h4>
+        <div id="sof-zman-shema" class="num">--:--</div>
+        <span class="zman-note">(שיטת הגר"א)</span>
+      </div>
+      <div class="zman-card">
+        <h4><span class="icon">🙏</span>סוף זמן תפילה</h4>
+        <div id="sof-zman-tefila" class="num">--:--</div>
+        <span class="zman-note">(שיטת הגר"א)</span>
+      </div>
+    </div>
+  </section>
 
-  <script src="https://unpkg.com/suncalc"></script>
-  <script src="hebrew-date.min.js"></script>
+  <section class="zman-section">
+    <h3 class="zman-section-title">חצות ומנחה</h3>
+    <div class="zman-grid">
+      <div class="zman-card">
+        <h4><span class="icon">☀️</span>חצות היום</h4>
+        <div id="chatzot-day" class="num">--:--</div>
+      </div>
+      <div class="zman-card">
+        <h4><span class="icon">🕓</span>מנחה גדולה</h4>
+        <div id="mincha-gedola" class="num">--:--</div>
+        <span class="zman-note">(שיטת הגר"א)</span>
+      </div>
+      <div class="zman-card">
+        <h4><span class="icon">🌇</span>פלג המנחה</h4>
+        <div id="plag-hamincha" class="num">--:--</div>
+      </div>
+      <div class="zman-card">
+        <h4><span class="icon">🌙</span>חצות הלילה</h4>
+        <div id="chatzot-night" class="num">--:--</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="zman-section" id="omer-section" hidden>
+    <h3 class="zman-section-title"><span class="icon">🌾</span>ספירת העומר</h3>
+    <div class="omer-card">
+      <div id="omer-count">--</div>
+      <span id="omer-detail" class="zman-note"></span>
+    </div>
+  </section>
+
+  <section class="zman-section">
+    <h3 class="zman-section-title"><span class="icon">🧭</span>כיוון תפילה</h3>
+    <div class="compass-card">
+      <svg class="compass" viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="46" class="compass-ring" />
+        <polygon id="compass-arrow" class="compass-needle" points="50,12 42,56 50,46 58,56" />
+      </svg>
+      <div class="compass-info">
+        <div id="compass-degrees" class="num">--°</div>
+        <span class="zman-note">לכיוון הכותל המערבי</span>
+        <button id="compass-live-toggle" type="button" class="compass-live-button">🧭 הפעלת מצפן חי</button>
+        <span id="compass-live-status" class="zman-note"></span>
+      </div>
+    </div>
+    <p class="zman-hint" id="compass-hint">הכיוון הגיאוגרפי המדויק לכותל המערבי בירושלים - יש להצמיד למצפן אמיתי לכיוון מדויק, או ללחוץ על "הפעלת מצפן חי"</p>
+  </section>
+
+  <!-- SunCalc 1.9.0 (MIT) מוגש מהמקור עצמו: אין תלות ב-CDN חיצוני שיכול להתחלף
+       תחת אותה כתובת, והספרייה זמינה גם offline. ראה vendor/suncalc-LICENSE.txt -->
+  <script src="vendor/suncalc.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

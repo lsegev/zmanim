@@ -1,8 +1,12 @@
 {
+  "id": "./",
   "name": "זמנים",
   "short_name": "זמנים",
   "description": "אפליקציית זמנים עם שעה זמנית",
+  "lang": "he",
+  "dir": "rtl",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4A90E2",

@@ -1,26 +1,176 @@
+/* גופני מערכת בלבד: אין טעינת גופנים מ-CDN חיצוני, כך שה-CSP נשאר הדוק
+   ואין דליפה של כתובות IP של המשתמשים לצד שלישי. */
+
+/* ============================================================
+   טוקנים עיצוביים
+   ------------------------------------------------------------
+   כל צבע, רדיוס וצל מוגדרים כאן פעם אחת. הטוקנים התלויים בערכה
+   (יום/לילה) מוגדרים על body.day / body.night, ולכן כל קומפוננטה
+   חדשה מקבלת התנהגות נכונה בשתי הערכות בלי override נפרד.
+   ============================================================ */
+:root {
+  --app-font: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+
+  --radius-lg: 20px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.1);
+
+  /* זמן שכבר עבר היום - מעומעם, אך עדיין בטווח קריא */
+  --past-opacity: 0.55;
+}
+
+/* ערכת יום */
+body.day {
+  --bg: linear-gradient(to bottom, #cdeefd, #ffffff);
+  --text: #1a1a1a;
+  --muted: #4c5a63;
+
+  --surface: rgba(255, 255, 255, 0.8);
+  --surface-soft: rgba(255, 255, 255, 0.7);
+  --surface-strong: rgba(255, 255, 255, 0.92);
+  --surface-bar: rgba(255, 255, 255, 0.5);
+
+  --border: rgba(0, 0, 0, 0.07);
+  --divider: rgba(0, 0, 0, 0.1);
+
+  --accent: #b87900;
+  --accent-line: rgba(255, 190, 60, 0.55);
+  --accent-glow: 0 8px 26px rgba(255, 190, 60, 0.3);
+
+  --chip: rgba(0, 0, 0, 0.07);
+  --chip-hover: rgba(0, 0, 0, 0.13);
+
+  --menu-bg: rgba(205, 238, 253, 0.9);
+  --menu-header-bg: rgba(255, 255, 255, 0.3);
+  --menu-item-bg: rgba(255, 255, 255, 0.4);
+  --menu-item-hover: rgba(255, 255, 255, 0.6);
+  --menu-item-active: rgba(255, 255, 255, 0.6);
+
+  --needle: #e74c3c;
+}
+
+/* ערכת לילה */
+body.night {
+  --bg: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
+  --text: #f2f2f2;
+  --muted: #aebfc8;
+
+  --surface: rgba(0, 0, 0, 0.4);
+  --surface-soft: rgba(0, 0, 0, 0.35);
+  /* "חזק" = מוגבה, כלומר בהיר יותר מהרקע - בערכת הלילה זו שכבה לבנה
+     שקופה, ולא שחור כהה יותר שהיה נקרא כמשטח שקוע. */
+  --surface-strong: rgba(255, 255, 255, 0.1);
+  --surface-bar: rgba(0, 0, 0, 0.3);
+
+  --border: rgba(255, 255, 255, 0.1);
+  --divider: rgba(255, 255, 255, 0.12);
+
+  --accent: #8fb8ff;
+  --accent-line: rgba(120, 170, 255, 0.45);
+  --accent-glow: 0 8px 26px rgba(120, 170, 255, 0.28);
+
+  --chip: rgba(255, 255, 255, 0.13);
+  --chip-hover: rgba(255, 255, 255, 0.22);
+
+  --menu-bg: rgba(15, 32, 39, 0.9);
+  --menu-header-bg: rgba(0, 0, 0, 0.3);
+  --menu-item-bg: rgba(0, 0, 0, 0.4);
+  --menu-item-hover: rgba(0, 0, 0, 0.6);
+  --menu-item-active: rgba(0, 0, 0, 0.6);
+
+  --needle: #ff6b5a;
+}
+
+/* ספרות ברוחב אחיד: בלי זה מונה השניות "רוקד" בכל טיק, וזמנים
+   בכרטיסים שונים לא מתיישרים אנכית זה מול זה. */
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
 body {
   margin: 0;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--app-font);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 100vh;
+  min-height: 100vh;
+  gap: 24px;
+  padding: 90px 16px 48px;
+  box-sizing: border-box;
   text-align: center;
+  background: var(--bg);
+  color: var(--text);
   transition: background 1s ease, color 1s ease;
 }
 
-/* Day Theme */
-body.day {
-  background: linear-gradient(to bottom, #cdeefd, #ffffff);
-  color: #1a1a1a;
+/* ============================================================
+   סרגל "הזמן הבא"
+   ============================================================ */
+.next-zman {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 90%;
+  max-width: 900px;
+  box-sizing: border-box;
+  padding: 14px 22px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-strong);
+  border: 1px solid var(--accent-line);
+  box-shadow: var(--accent-glow), var(--shadow-md);
+  backdrop-filter: blur(6px);
+  animation: fadeIn 1.2s ease;
 }
 
-/* Night Theme */
-body.night {
-  background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
-  color: #f2f2f2;
+.next-zman[hidden] {
+  display: none;
 }
 
+.next-zman-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: right;
+}
+
+.next-zman-side.end {
+  align-items: flex-end;
+  text-align: left;
+}
+
+.next-zman-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+.next-zman-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.next-zman-time {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.next-zman-countdown {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* ============================================================
+   שורת הכרטיסים הראשית
+   ============================================================ */
 .container {
   display: flex;
   flex-direction: row-reverse;
@@ -33,56 +183,278 @@ body.night {
 
 .time-box {
   flex: 1;
-  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: var(--surface);
   padding: 24px;
-  border-radius: 20px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-lg);
+  border: 1px solid transparent;
+  box-shadow: var(--shadow-lg);
   transition: background 0.6s ease, color 0.6s ease, transform 0.4s ease;
   backdrop-filter: blur(6px);
-}
-
-body.night .time-box {
-  background: rgba(0, 0, 0, 0.4);
-  color: #f0f0f0;
 }
 
 .time-box:hover {
   transform: translateY(-4px);
 }
 
-h2 {
-  margin-bottom: 12px;
-  font-size: 1.3rem;
-  font-weight: 600;
+/* "שעה זמנית" נשארת האלמנט הכי בולט במסך - קוביה גדולה יותר עם זוהר עדין */
+.time-box.center {
+  flex: 1.35;
+  padding: 30px 24px;
+  box-shadow: var(--accent-glow), var(--shadow-lg);
+  border-color: var(--accent-line);
 }
 
-#current-time, #custom-time, #sun-times {
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: inherit;
-  transition: all 0.8s ease-in-out;
+/* כותרות הקוביות הן תוויות, לא כותרות ראשיות: קטנות ומעומעמות,
+   כדי שהערך המספרי יהיה האלמנט הדומיננטי. */
+.time-box h2 {
+  margin: 0 0 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+
+.time-box.center h2 {
+  color: var(--accent);
+}
+
+#current-time {
+  font-size: 2.3rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.zmanit-value {
+  display: block;
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+/* זריחה/שקיעה: תווית קטנה מעומעמת מול ערך גדול, במקום שתי שורות
+   באותו גודל ומשקל. */
+/* גריד של שתי עמודות (תווית / ערך) כדי שהזריחה והשקיעה יתיישרו זו מול זו
+   ולא "יצופו" לפי אורך המילה. display:contents משטח את שורות ה-DOM לתוכו. */
+#sun-times {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: center;
+  align-items: baseline;
+  column-gap: 10px;
+  row-gap: 4px;
+  font-size: 0.95rem;
+}
+
+.sun-row {
+  display: contents;
+}
+
+.sun-label {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-align: right;
+}
+
+.sun-value {
+  font-size: 1.55rem;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: left;
+}
+
+.sun-unavailable {
+  grid-column: 1 / -1;
+  color: var(--muted);
 }
 
 .zman-type {
-  font-size: 1rem;
-  font-weight: normal;
+  font-size: 0.95rem;
+  font-weight: 500;
   display: block;
-  margin-top: 5px;
-  color: inherit;
-  transition: color 0.6s ease;
+  margin-top: 8px;
+}
+
+.zman-length {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--muted);
 }
 
 .icon {
   font-size: 1.4rem;
-  margin-right: 6px;
+  margin-inline-end: 6px;
   vertical-align: middle;
 }
 
-@media (max-width: 600px) {
-  .container {
-    flex-direction: column;
-    gap: 14px;
-  }
+/* ============================================================
+   סקציות זמני היום
+   ============================================================ */
+.zman-section {
+  width: 90%;
+  max-width: 900px;
+  animation: fadeIn 1.2s ease;
+}
+
+.zman-section-title {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-align: right;
+  color: var(--muted);
+}
+
+.zman-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+}
+
+.zman-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-soft);
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(6px);
+  transition: background 0.6s ease, color 0.6s ease, opacity 0.4s ease;
+}
+
+/* זמן שכבר עבר היום - מעומעם כדי שיהיה קל לראות מה עוד נותר */
+.zman-card.past {
+  opacity: var(--past-opacity);
+}
+
+/* הזמן הקרוב - הכרטיס היחיד עם טבעת ההדגשה */
+.zman-card.next,
+.time-box.next {
+  background: var(--surface-strong);
+  border-color: var(--accent-line);
+  box-shadow: var(--accent-glow), var(--shadow-md);
+}
+
+.zman-card h4 {
+  margin: 0 0 6px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.zman-card h4 .icon {
+  font-size: 1.05rem;
+  margin-inline-end: 0;
+}
+
+.zman-card > div {
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+/* ההערה נדחפת לתחתית הכרטיס, כך שהזמנים בשורה אחת יושבים על אותו
+   קו גם כשההערות באורך שונה. */
+.zman-note {
+  display: block;
+  margin-top: auto;
+  padding-top: 6px;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.zman-hint {
+  margin: 10px 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.omer-card {
+  background: var(--surface-soft);
+  padding: 20px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(6px);
+}
+
+#omer-count {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.compass-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: var(--surface-soft);
+  padding: 20px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(6px);
+}
+
+.compass {
+  width: 90px;
+  height: 90px;
+  flex-shrink: 0;
+}
+
+.compass-ring {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  opacity: 0.35;
+}
+
+.compass-needle {
+  fill: var(--needle);
+  transform-origin: 50px 50px;
+  /* מעבר קצר כדי שהחץ יגיב מיד לסיבוב המכשיר במצפן חי, ועדיין יחלוק מסלול חלק */
+  transition: transform 0.15s ease-out;
+}
+
+.compass-info {
+  text-align: right;
+}
+
+#compass-degrees {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.compass-live-button:not([hidden]) {
+  display: block;
+  margin-top: 10px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--chip);
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.compass-live-button:hover {
+  background: var(--chip-hover);
+}
+
+#compass-live-status {
+  display: block;
+  margin-top: 6px;
 }
 
 @keyframes fadeIn {
@@ -96,38 +468,27 @@ h2 {
   }
 }
 
-
-.zman-length {
-  display: block;
-  margin-top: 4px;
-  font-size: 0.9rem;
-  opacity: 0.7;
-}
-
-
+/* ============================================================
+   פס תאריך, תפריט וכפתורים
+   ============================================================ */
 .date-bar {
   position: absolute;
   top: 12px;
   width: 90%;
   max-width: 900px;
+  box-sizing: border-box;
   text-align: center;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 500;
-  opacity: 0.85;
-  padding: 4px 12px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.5);
+  color: var(--muted);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-bar);
   backdrop-filter: blur(4px);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  box-shadow: var(--shadow-sm);
   z-index: 90;
 }
 
-body.night .date-bar {
-  background: rgba(0, 0, 0, 0.3);
-  color: #f0f0f0;
-}
-
-/* תפריט צד */
 .menu-toggle {
     position: fixed;
     top: 20px;
@@ -135,7 +496,8 @@ body.night .date-bar {
     font-size: 24px;
     cursor: pointer;
     z-index: 100;
-    background: rgba(255, 255, 255, 0.8);
+    background: var(--surface);
+    color: var(--text);
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -144,17 +506,12 @@ body.night .date-bar {
     justify-content: center;
     backdrop-filter: blur(6px);
     transition: all 0.3s ease;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-}
-
-body.night .menu-toggle {
-    background: rgba(0, 0, 0, 0.4);
-    color: #f0f0f0;
+    box-shadow: var(--shadow-sm);
 }
 
 .menu-toggle:hover {
     transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-md);
 }
 
 .side-menu {
@@ -163,17 +520,15 @@ body.night .menu-toggle {
     right: -300px;
     width: 300px;
     height: 100vh;
-    background: rgba(205, 238, 253, 0.85);
+    background: var(--menu-bg);
+    color: var(--text);
     backdrop-filter: blur(10px);
     z-index: 1000;
     transition: right 0.3s ease;
     box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-    font-family: 'Inter', sans-serif;
-}
-
-body.night .side-menu {
-    background: rgba(15, 32, 39, 0.85);
-    color: #f2f2f2;
+    font-family: var(--app-font);
+    display: flex;
+    flex-direction: column;
 }
 
 .side-menu.active {
@@ -185,14 +540,9 @@ body.night .side-menu {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid var(--divider);
     text-align: right;
-    background: rgba(255, 255, 255, 0.3);
-}
-
-body.night .menu-header {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.3);
+    background: var(--menu-header-bg);
 }
 
 .menu-header h2 {
@@ -212,25 +562,81 @@ body.night .menu-header {
     justify-content: center;
     border-radius: 50%;
     transition: all 0.3s ease;
-    background: rgba(0, 0, 0, 0.05);
-}
-
-body.night .menu-close {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--chip);
 }
 
 .menu-close:hover {
-    background: rgba(0, 0, 0, 0.1);
+    background: var(--chip-hover);
     transform: scale(1.05);
-}
-
-body.night .menu-close:hover {
-    background: rgba(255, 255, 255, 0.2);
 }
 
 .menu-content {
     padding: 24px;
     text-align: right;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* דפים שטרם נבנו */
+.menu-item.soon a {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.menu-item.soon a:hover {
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.menu-badge {
+    font-size: 0.75em;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 8px;
+    background: var(--chip);
+    white-space: nowrap;
+}
+
+.menu-note {
+    margin: auto 0 0;
+    padding-top: 16px;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+/* באנר עדכון גרסה */
+.update-banner {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background: #ffd700;
+    color: #333;
+    padding: 1em;
+    text-align: center;
+    z-index: 10000;
+    box-sizing: border-box;
+}
+
+.update-banner[hidden] {
+    display: none;
+}
+
+.update-banner button {
+    margin-right: 1em;
+    font: inherit;
+    padding: 0.3em 1em;
+    border: none;
+    border-radius: 8px;
+    background: #333;
+    color: #fff;
+    cursor: pointer;
+}
+
+.update-banner button:disabled {
+    opacity: 0.6;
+    cursor: default;
 }
 
 .overlay {
@@ -252,19 +658,6 @@ body.night .menu-close:hover {
     visibility: visible;
 }
 
-/* התאמה לנייד */
-@media (max-width: 768px) {
-    .side-menu {
-        width: 100%;
-        right: -100%;
-    }
-    
-    .menu-toggle {
-        top: 10px;
-        right: 10px;
-    }
-}
-
 .menu-list {
     list-style: none;
     padding: 0;
@@ -282,40 +675,25 @@ body.night .menu-close:hover {
     padding: 14px 18px;
     text-decoration: none;
     color: inherit;
-    border-radius: 12px;
+    border-radius: var(--radius-sm);
     transition: all 0.3s ease;
     text-align: right;
     font-weight: 500;
-    background: rgba(255, 255, 255, 0.4);
+    background: var(--menu-item-bg);
     margin-bottom: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .menu-item a:hover {
-    background: rgba(255, 255, 255, 0.6);
+    background: var(--menu-item-hover);
     transform: translateX(-4px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-body.night .menu-item a {
-    background: rgba(0, 0, 0, 0.4);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-body.night .menu-item a:hover {
-    background: rgba(0, 0, 0, 0.6);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-md);
 }
 
 .menu-item.active a {
-    background: rgba(255, 255, 255, 0.6);
+    background: var(--menu-item-active);
     font-weight: 600;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-body.night .menu-item.active a {
-    background: rgba(0, 0, 0, 0.6);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-md);
 }
 
 .menu-icon {
@@ -331,27 +709,6 @@ body.night .menu-item.active a {
     font-weight: 500;
     text-align: right;
     flex-grow: 1;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-body.night .menu-text {
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
-/* התאמה לנייד */
-@media (max-width: 768px) {
-    .menu-item a {
-        padding: 16px 20px;
-    }
-    
-    .menu-icon {
-        font-size: 1.6em;
-        margin-left: 20px;
-    }
-    
-    .menu-text {
-        font-size: 1.2em;
-    }
 }
 
 .refresh-button {
@@ -360,34 +717,22 @@ body.night .menu-text {
     left: 20px;
     cursor: pointer;
     z-index: 100;
-    background: rgba(255, 255, 255, 0.9);
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
+    background: var(--surface);
+    color: var(--text);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     backdrop-filter: blur(8px);
     transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #2c3e50;
-}
-
-body.night .refresh-button {
-    background: rgba(15, 32, 39, 0.9);
-    color: #f0f0f0;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: var(--shadow-sm);
 }
 
 .refresh-button:hover {
     transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-    background: rgba(255, 255, 255, 0.95);
-}
-
-body.night .refresh-button:hover {
-    background: rgba(15, 32, 39, 0.95);
+    box-shadow: var(--shadow-md);
 }
 
 .refresh-button:active {
@@ -402,31 +747,114 @@ body.night .refresh-button:hover {
     transform: rotate(180deg);
 }
 
+/* ============================================================
+   רספונסיביות
+   ============================================================ */
+@media (max-width: 600px) {
+  .container {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* בפריסת עמודה - שעה זמנית תמיד ראשונה, בהתאם לבולטות שלה */
+  .time-box.center {
+    order: -1;
+  }
+
+  .zman-section-title {
+    text-align: center;
+  }
+
+  .compass-card {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .compass-info {
+    text-align: center;
+  }
+
+  .next-zman {
+    padding: 12px 18px;
+  }
+
+  .next-zman-name {
+    font-size: 1.1rem;
+  }
+
+  .next-zman-time {
+    font-size: 1.35rem;
+  }
+}
+
+/* מסכים צרים - כותרות הקוביות מצטמצמות כדי לצמצם שבירת שורות מיותרת */
+@media (max-width: 420px) {
+  .zman-grid {
+    gap: 10px;
+  }
+
+  .zman-card {
+    padding: 12px 10px;
+  }
+
+  .zman-card h4 {
+    font-size: 0.78rem;
+    gap: 4px;
+  }
+
+  .zman-card h4 .icon {
+    font-size: 0.95rem;
+  }
+
+  .zman-card > div {
+    font-size: 1.25rem;
+  }
+}
+
 /* התאמה לנייד */
 @media (max-width: 768px) {
+    .side-menu {
+        width: 100%;
+        right: -100%;
+    }
+
+    .menu-item a {
+        padding: 16px 20px;
+    }
+
+    .menu-icon {
+        font-size: 1.6em;
+        margin-left: 20px;
+    }
+
+    .menu-text {
+        font-size: 1.2em;
+    }
+
     .refresh-button {
         top: 16px;
         left: 16px;
-        width: 32px;
-        height: 32px;
-    }
-
-    .refresh-button svg {
-        width: 14px;
-        height: 14px;
-    }
-
-    .date-bar {
-        top: 70px;
-        width: calc(100% - 32px);
-        margin: 0 16px;
+        width: 36px;
+        height: 36px;
     }
 
     .menu-toggle {
         top: 16px;
         right: 16px;
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
         font-size: 20px;
+    }
+
+    .date-bar {
+        top: 66px;
+        width: calc(100% - 32px);
+        margin: 0 16px;
+    }
+
+    /* ה-date-bar זז למטה בנייד (כדי לפנות מקום לכפתורים), אז צריך עוד ריפוד
+       עליון כדי שהקוביה הראשונה לא תיחתך מתחתיו. */
+    body {
+        padding-top: 118px;
     }
 }
