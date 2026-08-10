@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<!-- מחלקת הערכה (day/night) יושבת על <html> ולא על <body>, כדי ש-app-init.js
+     יוכל לקבוע אותה בתוך ה-head - לפני הצביעה הראשונה ובלי הבזק לבן בלילה. -->
+<html lang="he" dir="rtl" class="day">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!--
+    Content-Security-Policy: מוגדרת כ-header ב-firebase.json, וכאן כגיבוי
+    לפריסה סטטית ללא שליטה ב-headers (כגון GitHub Pages). שתי ההגדרות
+    חייבות להישאר מסונכרנות - ראה README.
+  -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self';
+    style-src 'self';
+    img-src 'self' data:;
+    font-src 'self';
+    manifest-src 'self';
+    connect-src 'self' https://nominatim.openstreetmap.org https://api.bigdatacloud.net https://ipapi.co;
+    base-uri 'none';
+    form-action 'none';
+    object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
+  <meta name="theme-color" content="#cdeefd" id="theme-color-meta">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="מיל">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+  <title>אודות — מיל</title>
+  <meta name="description" content="על השם מיל, על מה שהיישומון מחשב, ומה קורה עם המיקום שלך: הסבר מלא על הפרטיות, על השירותים החיצוניים ועל מה שנשמר במכשיר.">
+
+  <meta property="og:title" content="אודות — מיל" />
+  <meta property="og:description" content="על השם מיל, על מה שהיישומון מחשב, ומה קורה עם המיקום שלך." />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="he_IL" />
+  <meta property="og:site_name" content="מיל" />
+
+  <meta http-equiv="Content-Language" content="he">
+  <link rel="canonical" href="https://mil-time.web.app/about.html">
+
+  <link rel="stylesheet" href="style.css">
+  <script src="app-init.js"></script>
+</head>
+<body>
+  <!-- רק האייקונים שהעמוד הזה באמת משתמש בהם. -->
+  <svg class="icon-sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-home" viewBox="0 0 24 24">
+      <path d="M3.4 10.6 12 3.4l8.6 7.2" />
+      <path d="M5.8 9.1v11.5h12.4V9.1" />
+    </symbol>
+    <symbol id="i-candle" viewBox="0 0 24 24">
+      <rect x="9.1" y="10.6" width="5.8" height="10" rx="1.4" />
+      <path d="M12 10.6V8.9" />
+      <path d="M12 8.9c1.6 0 2.7-1.1 2.7-2.6C14.7 4.6 12 2.4 12 2.4S9.3 4.6 9.3 6.3c0 1.5 1.1 2.6 2.7 2.6Z" />
+    </symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24">
+      <rect x="3.4" y="5" width="17.2" height="15.8" rx="2.6" />
+      <path d="M3.4 10h17.2M8.4 2.9v4.2M15.6 2.9v4.2" />
+    </symbol>
+    <symbol id="i-book" viewBox="0 0 24 24">
+      <path d="M12 6.6C10.3 5.2 8.2 4.6 5 4.6v12.8c3.2 0 5.3.6 7 2 1.7-1.4 3.8-2 7-2V4.6c-3.2 0-5.3.6-7 2Z" />
+      <path d="M12 6.6v12.8" />
+    </symbol>
+    <symbol id="i-info" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.6" />
+      <path d="M12 11.2v5.2M12 7.8h.01" />
+    </symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24">
+      <path d="M3.6 7h16.8M3.6 12h16.8M3.6 17h16.8" />
+    </symbol>
+    <symbol id="i-close" viewBox="0 0 24 24">
+      <path d="M6.2 6.2 17.8 17.8M17.8 6.2 6.2 17.8" />
+    </symbol>
+  </svg>
+
+  <div id="update-banner" class="update-banner" hidden>
+    יש גרסה חדשה! <button id="update-button" type="button">רענן עכשיו</button>
+  </div>
+
+  <button type="button" class="icon-button menu-toggle" id="menu-toggle"
+          aria-label="פתיחת התפריט" aria-expanded="false" aria-controls="side-menu">
+    <svg class="icon" aria-hidden="true"><use href="#i-menu" /></svg>
+  </button>
+
+  <div class="side-menu" id="side-menu" aria-hidden="true">
+    <div class="menu-header">
+      <h2>תפריט</h2>
+      <button type="button" class="icon-button menu-close" aria-label="סגירת התפריט">
+        <svg class="icon" aria-hidden="true"><use href="#i-close" /></svg>
+      </button>
+    </div>
+    <nav class="menu-content" aria-label="ניווט ראשי">
+      <ul class="menu-list">
+        <li class="menu-item">
+          <a href="./">
+            <svg class="menu-icon" aria-hidden="true"><use href="#i-home" /></svg>
+            <span class="menu-text">דף הבית</span>
+          </a>
+        </li>
+        <!-- דפים שטרם נבנו: ללא href, ולכן גם לא ניתנים למיקוד מקלדת ולא מנווטים לשום מקום -->
+        <li class="menu-item soon">
+          <a aria-disabled="true">
+            <svg class="menu-icon" aria-hidden="true"><use href="#i-candle" /></svg>
+            <span class="menu-text">זמני שבת</span>
+            <span class="menu-badge">בקרוב</span>
+          </a>
+        </li>
+        <li class="menu-item soon">
+          <a aria-disabled="true">
+            <svg class="menu-icon" aria-hidden="true"><use href="#i-calendar" /></svg>
+            <span class="menu-text">תאריכים חשובים השבוע</span>
+            <span class="menu-badge">בקרוב</span>
+          </a>
+        </li>
+        <li class="menu-item soon">
+          <a aria-disabled="true">
+            <svg class="menu-icon" aria-hidden="true"><use href="#i-book" /></svg>
+            <span class="menu-text">לימוד יומי</span>
+            <span class="menu-badge">בקרוב</span>
+          </a>
+        </li>
+        <li class="menu-item active">
+          <a href="about.html" aria-current="page">
+            <svg class="menu-icon" aria-hidden="true"><use href="#i-info" /></svg>
+            <span class="menu-text">אודות</span>
+          </a>
+        </li>
+      </ul>
+      <p class="menu-note">
+        המיקום שלך משמש לחישוב זמני היום בלבד ונשלח לשירותי זיהוי מיקום חיצוניים
+        בדיוק מעוגל של כ-100 מטר. הוא אינו נשמר בשרת כלשהו.
+      </p>
+    </nav>
+  </div>
+  <div class="overlay"></div>
+
+  <main class="page">
+    <header class="page-header">
+      <img class="page-logo" src="icon.svg" width="96" height="96"
+           alt="אבן מיל רומית שעליה חקוקה הספרה XVIII, על רקע שמש נמוכה">
+      <h1>מיל</h1>
+      <p class="page-lede">זמני היום ההלכתיים, מחושבים לפי המקום שבו אתה נמצא.</p>
+    </header>
+
+    <section class="prose" aria-labelledby="h-name">
+      <h2 id="h-name">למה &rdquo;מיל&ldquo;?</h2>
+      <p>
+        <strong>מיל</strong> הוא מידת המרחק ההלכתית: המרחק שאדם מהלך ברגל בשמונה־עשרה דקות.
+        זו מידה שמודדת מרחק ביחידות של זמן — ובדיוק המפגש הזה הוא מה שהיישומון עושה.
+      </p>
+      <p>
+        המילה עצמה שאולה מלטינית, <span lang="la"><em>miliarium</em></span> — אבן המיל הרומית
+        שהוצבה בצידי הדרכים וסימנה את המרחק שנותר. אותה מילה נושאת אפוא את שתי המשמעויות:
+        <strong>הזמן</strong> של שמונה־עשרה הדקות, ו<strong>המרחק</strong> שמסמנת האבן.
+      </p>
+      <p>
+        שמונה־עשרה הדקות אינן מספר שרירותי: הן גם מניין <strong>ח״י</strong>, והן משמשות
+        למשל כשיעור הנפוץ לצאת הכוכבים אחרי השקיעה. משום כך חקוקה על האייקון הספרה
+        הרומית <strong>XVIII</strong> — והצל שהאבן מטילה הוא עצמו מד-הזמן, שעון שמש.
+      </p>
+      <p class="aside">
+        באנגלית היישומון נקרא <span lang="en" dir="ltr">Mil</span>.
+      </p>
+    </section>
+
+    <section class="prose" aria-labelledby="h-what">
+      <h2 id="h-what">מה היישומון מחשב</h2>
+      <p>
+        ביסוד הכול עומדת <strong>השעה הזמנית</strong>: היום ההלכתי, מהזריחה עד השקיעה,
+        מחולק לשתים־עשרה שעות שוות. בקיץ שעה כזו ארוכה משישים דקות, ובחורף קצרה מהן —
+        ולכן זמני היום זזים לאורך השנה ומשתנים גם לפי קו הרוחב שבו אתה נמצא.
+      </p>
+      <ul>
+        <li>עלות השחר, משיכיר, הזריחה והשקיעה</li>
+        <li>סוף זמן קריאת שמע וסוף זמן תפילה</li>
+        <li>חצות היום, מנחה גדולה ופלג המנחה</li>
+        <li>צאת הכוכבים — שמונה־עשרה דקות אחרי השקיעה, ולצידו שיטת רבנו תם</li>
+        <li>כיוון תפילה לאבן השתייה שבהר הבית, עם מצפן חי</li>
+        <li>תאריך עברי בגימטריה לצד התאריך הלועזי</li>
+      </ul>
+      <p class="aside">
+        החישובים נעשים במלואם בתוך הדפדפן שלך, בעזרת הספרייה
+        <span lang="en" dir="ltr">SunCalc</span>, שמוגשת מהשרת של היישומון עצמו.
+        היישומון אינו מתחזק שרת חישוב, ואין אליו בסיס נתונים.
+      </p>
+      <p class="note-inline">
+        <strong>לתשומת לבך:</strong> הזמנים מוצגים לנוחות בלבד ועשויים להיות
+        תלויים בשיטת חישוב ובמנהג. להכרעה הלכתית יש להסתמך על לוח מוסמך או על מורה הוראה.
+      </p>
+    </section>
+
+    <section class="prose" aria-labelledby="h-privacy">
+      <h2 id="h-privacy">פרטיות</h2>
+      <p class="privacy-summary">
+        אין חשבונות, אין הרשמה, אין עוגיות מעקב ואין אנליטיקס.
+        היישומון אינו מחזיק עליך שום נתון בשרת.
+      </p>
+
+      <h3>המיקום</h3>
+      <p>
+        המיקום מגיע מהדפדפן — רק אחרי שאישרת זאת. אם לא ניתנה הרשאה, נעשה זיהוי
+        גס לפי כתובת <span lang="en" dir="ltr">IP</span> דרך
+        <span lang="en" dir="ltr">ipapi.co</span>, ואז המיקום מסומן בתגית
+        <strong>&rdquo;משוער&ldquo;</strong>. המיקום משמש לחישוב הזמנים בדפדפן
+        ואינו נשלח לשום שרת שלנו — משום שאין שרת כזה.
+      </p>
+
+      <h3>שם היישוב</h3>
+      <p>
+        כדי להציג את שם המקום, הקואורדינטות נשלחות לשירות
+        <span lang="en" dir="ltr">Nominatim (OpenStreetMap)</span>, ובנפילה
+        ל־<span lang="en" dir="ltr">BigDataCloud</span>. לפני השליחה הן
+        <strong>מעוגלות לשלוש ספרות אחרי הנקודה</strong> — דיוק של כ-100 מטר, שמספיק
+        לשם היישוב אך אינו מצביע על כתובת. התוצאה נשמרת במטמון מקומי לשבוע,
+        כדי לצמצם את מספר הפניות.
+      </p>
+
+      <h3>מה נשמר במכשיר</h3>
+      <p>
+        בזיכרון המקומי של הדפדפן (<span lang="en" dir="ltr">localStorage</span>) נשמרים
+        רק העדפת הערכה (בהיר/כהה) ומטמון שמות היישובים. הכול נשאר במכשיר שלך,
+        ונמחק כשמנקים את נתוני האתר בדפדפן.
+      </p>
+
+      <h3>מדידת תנועה</h3>
+      <p>
+        לא מותקן <span lang="en" dir="ltr">Google Analytics</span> ולא כל
+        <span lang="en" dir="ltr">SDK</span> אחר למעקב. מספר הכניסות נצפה דרך המדדים
+        המובנים של <span lang="en" dir="ltr">Firebase Hosting</span>, המחושבים בצד השרת
+        מתוך לוגים של בקשות — ולכן אין עוגיות ואין מזהה משתמש.
+      </p>
+
+      <h3>ללא צד שלישי</h3>
+      <p>
+        אין גופנים חיצוניים ואין ספריות מ־<span lang="en" dir="ltr">CDN</span>: הכול מוגש
+        מהשרת של היישומון, כך שלא דולפות כתובות <span lang="en" dir="ltr">IP</span>
+        של משתמשים לצדדים שלישיים. מדיניות
+        <span lang="en" dir="ltr">Content-Security-Policy</span> הדוקה מגבילה את
+        התקשורת לשלושת שירותי המיקום שנזכרו כאן בלבד.
+      </p>
+    </section>
+
+    <section class="prose" aria-labelledby="h-tech">
+      <h2 id="h-tech">קוד ורישיון</h2>
+      <p>
+        היישומון עובד גם ללא חיבור לאינטרנט וניתן להתקנה למסך הבית
+        (<span lang="en" dir="ltr">PWA</span>). הוא בנוי ב־
+        <span lang="en" dir="ltr">HTML</span>,
+        <span lang="en" dir="ltr">CSS</span> ו־<span lang="en" dir="ltr">JavaScript</span>
+        בלבד, ללא מסגרת עבודה חיצונית.
+      </p>
+      <p>
+        חישובי השמש נעשים בעזרת <span lang="en" dir="ltr">SunCalc</span> 1.9.0
+        (רישיון <span lang="en" dir="ltr">MIT</span>).
+      </p>
+    </section>
+
+    <p class="back-home">
+      <a href="./">חזרה לזמנים</a>
+    </p>
+  </main>
+
+  <script src="menu.js"></script>
+  <script src="about.js"></script>
+</body>
+</html>

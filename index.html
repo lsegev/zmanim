@@ -136,6 +136,10 @@
       <rect x="3.4" y="5" width="17.2" height="15.8" rx="2.6" />
       <path d="M3.4 10h17.2M8.4 2.9v4.2M15.6 2.9v4.2" />
     </symbol>
+    <symbol id="i-info" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.6" />
+      <path d="M12 11.2v5.2M12 7.8h.01" />
+    </symbol>
     <symbol id="i-menu" viewBox="0 0 24 24">
       <path d="M3.6 7h16.8M3.6 12h16.8M3.6 17h16.8" />
     </symbol>
@@ -212,10 +216,17 @@
             <span class="menu-badge">בקרוב</span>
           </a>
         </li>
+        <li class="menu-item">
+          <a href="about.html">
+            <svg class="menu-icon" aria-hidden="true"><use href="#i-info" /></svg>
+            <span class="menu-text">אודות</span>
+          </a>
+        </li>
       </ul>
       <p class="menu-note">
         המיקום שלך משמש לחישוב זמני היום בלבד ונשלח לשירותי זיהוי מיקום חיצוניים
         בדיוק מעוגל של כ-100 מטר. הוא אינו נשמר בשרת כלשהו.
+        <a href="about.html">עוד על הפרטיות</a>
       </p>
     </nav>
   </div>
@@ -369,6 +380,7 @@
   <!-- SunCalc 1.9.0 (MIT) מוגש מהמקור עצמו: אין תלות ב-CDN חיצוני שיכול להתחלף
        תחת אותה כתובת, והספרייה זמינה גם offline. ראה vendor/suncalc-LICENSE.txt -->
   <script src="vendor/suncalc.js"></script>
+  <script src="menu.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
