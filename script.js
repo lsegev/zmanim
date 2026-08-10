@@ -12,6 +12,21 @@ const DAILY_ZMAN_IDS = [
   'chatzot-day', 'mincha-gedola', 'plag-hamincha', 'chatzot-night'
 ];
 
+// שמות הזמנים לסרגל "הזמן הבא". הנץ והשקיעה אינם קוביות זמן, ולכן הם
+// מזוהים במפתחות נפרדים שממופים לקוביית "זריחה ושקיעה".
+const ZMAN_LABELS = {
+  'alot-hashachar': 'עלות השחר',
+  'misheyakir': 'משיכיר',
+  'sof-zman-shema': 'סוף זמן ק"ש',
+  'sof-zman-tefila': 'סוף זמן תפילה',
+  'chatzot-day': 'חצות היום',
+  'mincha-gedola': 'מנחה גדולה',
+  'plag-hamincha': 'פלג המנחה',
+  'chatzot-night': 'חצות הלילה',
+  'sunrise': 'הנץ החמה',
+  'sunset': 'שקיעה'
+};
+
 // דיוק המיקום שנשלח לשירותי הגאוקודינג החיצוניים.
 // 3 ספרות אחרי הנקודה = כ-100 מטר, מספיק כדי לזהות יישוב בלי לחשוף מיקום מדויק.
 const GEOCODE_PRECISION = 3;
@@ -225,23 +240,55 @@ function getSunTimes(date, latitude, longitude) {
 }
 
 function showSunUnavailable() {
-  document.getElementById('sun-times').textContent = 'אין זריחה או שקיעה במיקום זה היום';
-  document.getElementById('custom-time').textContent = '--:--';
+  const sunTimes = document.getElementById('sun-times');
+  sunTimes.textContent = '';
+  const message = document.createElement('span');
+  message.className = 'sun-unavailable';
+  message.textContent = 'אין זריחה או שקיעה במיקום זה היום';
+  sunTimes.appendChild(message);
+
+  const container = document.getElementById('custom-time');
+  container.textContent = '';
+  const valueEl = document.createElement('span');
+  valueEl.className = 'zmanit-value num';
+  valueEl.textContent = '--:--';
+  container.appendChild(valueEl);
+
   DAILY_ZMAN_IDS.forEach(id => displayZmanCard(id, null, new Date()));
+  clearNextZman();
+}
+
+// שורת "תווית קטנה + ערך גדול", כדי שהשעה תהיה האלמנט הדומיננטי ולא
+// המילה שלפניה.
+function buildSunRow(label, value) {
+  const row = document.createElement('div');
+  row.className = 'sun-row';
+
+  const labelEl = document.createElement('span');
+  labelEl.className = 'sun-label';
+  labelEl.textContent = label;
+
+  const valueEl = document.createElement('span');
+  valueEl.className = 'sun-value num';
+  valueEl.textContent = value;
+
+  row.appendChild(labelEl);
+  row.appendChild(valueEl);
+  return row;
 }
 
 function displaySunTimes(now, sunrise, sunset) {
-  const sunriseStr = sunrise.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-  const sunsetStr = sunset.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+  const sunriseStr = formatHM(sunrise);
+  const sunsetStr = formatHM(sunset);
 
   const isDay = now >= sunrise && now < sunset;
-  const first = isDay ? `זריחה: ${sunriseStr}` : `שקיעה: ${sunsetStr}`;
-  const second = isDay ? `שקיעה: ${sunsetStr}` : `זריחה: ${sunriseStr}`;
+  const first = isDay ? ['זריחה', sunriseStr] : ['שקיעה', sunsetStr];
+  const second = isDay ? ['שקיעה', sunsetStr] : ['זריחה', sunriseStr];
 
   const container = document.getElementById('sun-times');
-  container.textContent = first;
-  container.appendChild(document.createElement('br'));
-  container.appendChild(document.createTextNode(second));
+  container.textContent = '';
+  container.appendChild(buildSunRow(first[0], first[1]));
+  container.appendChild(buildSunRow(second[0], second[1]));
 }
 
 function displayZmanitTime(now, todaySunrise, todaySunset, prevSunset, nextSunrise) {
@@ -279,8 +326,12 @@ function displayZmanitTime(now, todaySunrise, todaySunset, prevSunset, nextSunri
   const icon = zmanType === 'יום' ? '☀️' : '🌙';
 
   const container = document.getElementById('custom-time');
-  container.textContent = zmanDisplay;
-  container.appendChild(document.createElement('br'));
+  container.textContent = '';
+
+  const valueEl = document.createElement('span');
+  valueEl.className = 'zmanit-value num';
+  valueEl.textContent = zmanDisplay;
+  container.appendChild(valueEl);
 
   const typeEl = document.createElement('span');
   typeEl.className = 'zman-type';
@@ -361,17 +412,98 @@ function displayDailyZmanim(now, times, prevTimes, nextTimes) {
 
   if (!daily) {
     DAILY_ZMAN_IDS.forEach(id => displayZmanCard(id, null, now));
+    clearNextZman();
     return;
   }
 
-  displayZmanCard('alot-hashachar', daily.alotHashachar, now);
-  displayZmanCard('misheyakir', daily.misheyakir, now);
-  displayZmanCard('sof-zman-shema', daily.sofZmanShema, now);
-  displayZmanCard('sof-zman-tefila', daily.sofZmanTefila, now);
-  displayZmanCard('chatzot-day', times.solarNoon, now);
-  displayZmanCard('mincha-gedola', daily.minchaGedola, now);
-  displayZmanCard('plag-hamincha', daily.plagHamincha, now);
-  displayZmanCard('chatzot-night', chatzotNight, now);
+  const cardZmanim = [
+    ['alot-hashachar', daily.alotHashachar],
+    ['misheyakir', daily.misheyakir],
+    ['sof-zman-shema', daily.sofZmanShema],
+    ['sof-zman-tefila', daily.sofZmanTefila],
+    ['chatzot-day', times.solarNoon],
+    ['mincha-gedola', daily.minchaGedola],
+    ['plag-hamincha', daily.plagHamincha],
+    ['chatzot-night', chatzotNight]
+  ];
+
+  cardZmanim.forEach(([id, date]) => displayZmanCard(id, date, now));
+
+  // הנץ והשקיעה נכללים במועמדים לזמן הבא אף שאין להם קוביה משלהם -
+  // הם הזמנים המשמעותיים ביותר בחלקי היום שבהם אין זמן הלכתי קרוב יותר.
+  updateNextZman(now, cardZmanim.concat([
+    ['sunrise', times.sunrise],
+    ['sunset', times.sunset]
+  ]));
+}
+
+// ============================================================
+// "הזמן הבא"
+// ============================================================
+
+// הכרטיס שיש להדגיש עבור מפתח נתון. הנץ ושקיעה ממופים לקוביית
+// "זריחה ושקיעה", שהיא המקום שבו הם באמת מוצגים.
+function nextZmanTarget(key) {
+  if (key === 'sunrise' || key === 'sunset') {
+    return document.querySelector('.time-box.left');
+  }
+  const valueEl = document.getElementById(key);
+  return valueEl ? valueEl.closest('.zman-card') : null;
+}
+
+function highlightNextZman(key) {
+  document.querySelectorAll('.next').forEach(el => el.classList.remove('next'));
+  const target = key === null ? null : nextZmanTarget(key);
+  if (target) target.classList.add('next');
+}
+
+function formatCountdown(ms) {
+  const totalMinutes = Math.floor(ms / 60000);
+  if (totalMinutes < 1) return 'עוד פחות מדקה';
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  // "דקה" אחת נאמרת בלי המספר ובלי מקף ("שעה ודקה"), בשונה מריבוי ("שעה ו-12 דקות").
+  const minutesText = minutes === 1 ? 'דקה' : `${minutes} דקות`;
+
+  if (hours === 0) return `בעוד ${minutesText}`;
+
+  const hoursText = hours === 1 ? 'שעה' : (hours === 2 ? 'שעתיים' : `${hours} שעות`);
+  if (minutes === 0) return `בעוד ${hoursText}`;
+  return `בעוד ${hoursText} ${minutes === 1 ? 'ודקה' : 'ו-' + minutesText}`;
+}
+
+function clearNextZman() {
+  const section = document.getElementById('next-zman');
+  if (section) section.hidden = true;
+  highlightNextZman(null);
+}
+
+function updateNextZman(now, candidates) {
+  const section = document.getElementById('next-zman');
+  if (!section) return;
+
+  let bestKey = null;
+  let bestDate = null;
+
+  for (const [key, date] of candidates) {
+    if (!isValidDate(date) || date <= now) continue;
+    if (bestDate === null || date < bestDate) {
+      bestKey = key;
+      bestDate = date;
+    }
+  }
+
+  if (bestKey === null) {
+    clearNextZman();
+    return;
+  }
+
+  section.hidden = false;
+  document.getElementById('next-zman-name').textContent = ZMAN_LABELS[bestKey] || '';
+  document.getElementById('next-zman-time').textContent = formatHM(bestDate);
+  document.getElementById('next-zman-countdown').textContent = formatCountdown(bestDate - now);
+  highlightNextZman(bestKey);
 }
 
 function toRad(deg) { return deg * Math.PI / 180; }

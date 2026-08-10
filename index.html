@@ -114,15 +114,28 @@
   </div>
   <div class="overlay"></div>
   <div class="date-bar" id="date-bar">...</div>
+
+  <!-- הזמן ההלכתי הקרוב ביותר - התשובה לשאלה שבגללה פותחים את האפליקציה -->
+  <section class="next-zman" id="next-zman" hidden>
+    <div class="next-zman-side">
+      <span class="next-zman-label">הזמן הבא</span>
+      <span class="next-zman-name" id="next-zman-name">--</span>
+    </div>
+    <div class="next-zman-side end">
+      <span class="next-zman-time num" id="next-zman-time">--:--</span>
+      <span class="next-zman-countdown" id="next-zman-countdown">--</span>
+    </div>
+  </section>
+
   <div class="container">
     <div class="time-box right">
       <h2>השעה הנוכחית</h2>
-      <div id="current-time">--:--:--</div>
+      <div id="current-time" class="num">--:--:--</div>
     </div>
 
     <div class="time-box center">
       <h2>שעה זמנית</h2>
-      <div id="custom-time">--:--<br><span class="zman-type">--</span></div>
+      <div id="custom-time"><span class="zmanit-value num">--:--</span><span class="zman-type">--</span></div>
     </div>
 
     <div class="time-box left">
@@ -136,22 +149,22 @@
     <div class="zman-grid">
       <div class="zman-card">
         <h4><span class="icon">🌅</span>עלות השחר</h4>
-        <div id="alot-hashachar">--:--</div>
+        <div id="alot-hashachar" class="num">--:--</div>
         <span class="zman-note">72 דק' זמניות (שעה וחמישית) לפני הנץ</span>
       </div>
       <div class="zman-card">
         <h4><span class="icon">👁️</span>משיכיר</h4>
-        <div id="misheyakir">--:--</div>
+        <div id="misheyakir" class="num">--:--</div>
         <span class="zman-note">50 דק' זמניות לפני הנץ</span>
       </div>
       <div class="zman-card">
         <h4><span class="icon">📖</span>סוף זמן ק"ש</h4>
-        <div id="sof-zman-shema">--:--</div>
+        <div id="sof-zman-shema" class="num">--:--</div>
         <span class="zman-note">(שיטת הגר"א)</span>
       </div>
       <div class="zman-card">
         <h4><span class="icon">🙏</span>סוף זמן תפילה</h4>
-        <div id="sof-zman-tefila">--:--</div>
+        <div id="sof-zman-tefila" class="num">--:--</div>
         <span class="zman-note">(שיטת הגר"א)</span>
       </div>
     </div>
@@ -162,20 +175,20 @@
     <div class="zman-grid">
       <div class="zman-card">
         <h4><span class="icon">☀️</span>חצות היום</h4>
-        <div id="chatzot-day">--:--</div>
+        <div id="chatzot-day" class="num">--:--</div>
       </div>
       <div class="zman-card">
         <h4><span class="icon">🕓</span>מנחה גדולה</h4>
-        <div id="mincha-gedola">--:--</div>
+        <div id="mincha-gedola" class="num">--:--</div>
         <span class="zman-note">(שיטת הגר"א)</span>
       </div>
       <div class="zman-card">
         <h4><span class="icon">🌇</span>פלג המנחה</h4>
-        <div id="plag-hamincha">--:--</div>
+        <div id="plag-hamincha" class="num">--:--</div>
       </div>
       <div class="zman-card">
         <h4><span class="icon">🌙</span>חצות הלילה</h4>
-        <div id="chatzot-night">--:--</div>
+        <div id="chatzot-night" class="num">--:--</div>
       </div>
     </div>
   </section>
@@ -196,7 +209,7 @@
         <polygon id="compass-arrow" class="compass-needle" points="50,12 42,56 50,46 58,56" />
       </svg>
       <div class="compass-info">
-        <div id="compass-degrees">--°</div>
+        <div id="compass-degrees" class="num">--°</div>
         <span class="zman-note">לכיוון הכותל המערבי</span>
         <button id="compass-live-toggle" type="button" class="compass-live-button">🧭 הפעלת מצפן חי</button>
         <span id="compass-live-status" class="zman-note"></span>
