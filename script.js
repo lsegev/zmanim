@@ -896,6 +896,32 @@ function gematria(num) {
   return result;
 }
 
+// היום העברי מתחיל בערב ולא בחצות האזרחי, אך Intl עם לוח עברי מתקדם ליום הבא
+// רק בחצות - ולכן בין הערב לחצות הוא מציג את היום העברי הקודם.
+// הפתרון: מקדמים את התאריך שנשלח ל-Intl ביממה אחת ברגע שהיום העברי כבר התחלף.
+//
+// הגבול נקבע לפי צאת הכוכבים ולא לפי השקיעה. בין השקיעה לצאת הכוכבים נמצא
+// בין השמשות - זמן שספק יום ספק לילה - ולכן הצגת התאריך החדש כבר בשקיעה הייתה
+// מקדימה את המעבר בוודאות, בעוד שצאת הכוכבים הוא הרגע שבו היום החדש התחיל לכל
+// הדעות. (לחומרות מעשיות, כגון סוף זמן מלאכה בערב שבת, יש להסתמך על הזמנים
+// עצמם ולא על פס התאריך.)
+//
+// התיקון חל רק על חלון הערב - מצאת הכוכבים ועד חצות. אחרי חצות התאריך האזרחי
+// כבר התקדם מעצמו, ותוספת נוספת הייתה מדלגת יום שלם קדימה. לכן ההשוואה היא
+// מול היום האזרחי של הגבול, ולא מול חותמת הזמן בלבד.
+function isSameCivilDay(a, b) {
+  return a.getFullYear() === b.getFullYear()
+    && a.getMonth() === b.getMonth()
+    && a.getDate() === b.getDate();
+}
+
+function getEffectiveHebrewDate(now, dayBoundary) {
+  if (isValidDate(dayBoundary) && now >= dayBoundary && isSameCivilDay(now, dayBoundary)) {
+    return new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  }
+  return now;
+}
+
 function getHebrewDateParts(date) {
   const formatter = new Intl.DateTimeFormat('he-u-ca-hebrew', {
     day: 'numeric',
@@ -915,8 +941,11 @@ function getFormattedHebrewDate(date) {
   return `${gematria(day)} ב${month} ${gematria(year % 1000)}`;
 }
 
-function updateDateBar() {
+// dayBoundary הוא צאת הכוכבים של היום הנוכחי. כל עוד אין מיקום הוא null,
+// ואז מוצג התאריך העברי לפי חצות - הקירוב היחיד האפשרי בלי לדעת היכן המשתמש.
+function updateDateBar(dayBoundary) {
   const now = new Date();
+  // התאריך הלועזי מתחלף בחצות, ולכן הוא תמיד מחושב מ-now עצמו.
   const gregorian = now.toLocaleDateString('he-IL', {
     weekday: 'long',
     day: 'numeric',
@@ -924,8 +953,9 @@ function updateDateBar() {
     year: 'numeric'
   });
 
-  const hebrew = getFormattedHebrewDate(now);
-  document.getElementById('date-bar-text').textContent = `${gregorian} | ${hebrew}`;
+  const hebrew = getFormattedHebrewDate(getEffectiveHebrewDate(now, dayBoundary));
+  const dateBar = document.getElementById('date-bar-text');
+  dateBar.textContent = `${gregorian} | ${hebrew}`;
 }
 
 // initMenu() חי ב-menu.js, המשותף לדף הבית ולעמוד אודות.
@@ -957,9 +987,12 @@ function startLiveUpdates() {
 
 function updateAll() {
   updateCurrentTime();
-  updateDateBar();
 
-  if (state.latitude === null || state.longitude === null) return;
+  if (state.latitude === null || state.longitude === null) {
+    // בלי מיקום אין צאת הכוכבים, ולכן התאריך העברי מוצג לפי חצות בלבד.
+    updateDateBar(null);
+    return;
+  }
 
   // כל הזמנים מחושבים מחדש מהתאריך הנוכחי, כך שהמעבר לתאריך חדש בחצות
   // מתעדכן גם באפליקציה שנשארה פתוחה כל הלילה.
@@ -970,6 +1003,10 @@ function updateAll() {
   const times = getSunTimes(now, state.latitude, state.longitude);
   const prevTimes = getSunTimes(prevDay, state.latitude, state.longitude);
   const nextTimes = getSunTimes(nextDay, state.latitude, state.longitude);
+
+  // צאת הכוכבים של היום הנוכחי הוא הגבול שבו מתחלף התאריך העברי.
+  const todayDaily = computeDailyZmanim(times.sunrise, times.sunset);
+  updateDateBar(todayDaily && todayDaily.tzeitHakochavim);
 
   displayCompassCard(state.latitude, state.longitude);
   displayOmerCard(now, times.sunset);
@@ -985,7 +1022,8 @@ function updateAll() {
 }
 
 function init() {
-  updateDateBar();
+  // ציור ראשוני לפני שהמיקום ידוע; updateAll יתקן לפי צאת הכוכבים כשיתקבל.
+  updateDateBar(null);
   updateCurrentTime();
   startLiveUpdates();
   initThemeButton();
