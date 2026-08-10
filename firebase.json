@@ -34,6 +34,11 @@
         "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
       },
       {
+        "//": "הכתובת '/' אינה נתפסת ע\"י הגלוב של *.html, ולכן בלי הכלל הזה היא נופלת לברירת המחדל של Hosting (max-age=3600) — ושינוי היה מגיע למשתמשים רק אחרי שעה.",
+        "source": "/",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      },
+      {
         "source": "**/*.@(js|css)",
         "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
       },
