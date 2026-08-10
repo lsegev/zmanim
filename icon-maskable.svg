@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="sky" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="348.04">
+      <stop offset="0" stop-color="#152549"/><stop offset="0.5" stop-color="#3D5183"/>
+      <stop offset="1" stop-color="#F0B778"/>
+    </linearGradient>
+    <radialGradient id="sun" gradientUnits="userSpaceOnUse" cx="162.39999999999998" cy="348.04" r="74.88">
+      <stop offset="0" stop-color="#FFF0CE"/><stop offset="1" stop-color="#FFAF4E"/>
+    </radialGradient>
+    <radialGradient id="glow" gradientUnits="userSpaceOnUse" cx="162.39999999999998" cy="348.04" r="157.248">
+      <stop offset="0" stop-color="#FFB55A" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#FFB55A" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="stone" gradientUnits="userSpaceOnUse" x1="217" y1="0" x2="295" y2="0">
+      <stop offset="0" stop-color="#F3D6A8"/><stop offset="0.32" stop-color="#DCB57F"/>
+      <stop offset="0.7" stop-color="#9C7850"/><stop offset="1" stop-color="#6A4E34"/>
+    </linearGradient>
+    <linearGradient id="shadowG" gradientUnits="userSpaceOnUse" x1="256" y1="0" x2="451" y2="0">
+      <stop offset="0" stop-color="#3A2A1C" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#3A2A1C" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="above"><rect x="0" y="0" width="512" height="348.04"/></clipPath>
+  </defs>
+  <rect width="512" height="512" fill="url(#sky)"/>
+  <g clip-path="url(#above)">
+    <circle cx="162.39999999999998" cy="348.04" r="157.248" fill="url(#glow)"/>
+    <circle cx="162.39999999999998" cy="348.04" r="74.88" fill="url(#sun)"/>
+  </g>
+  <rect x="0" y="348.04" width="512" height="163.95999999999998" fill="#C68F55"/>
+  <rect x="0" y="348.04" width="512" height="163.95999999999998" fill="#8B5E3C" opacity="0.45"/>
+  <polygon points="195.16,348.03999999999996 316.84000000000003,348.03999999999996 451,368.31999999999994 287.2,368.31999999999994" fill="url(#shadowG)"/>
+  <rect x="195.16" y="323.08" width="121.68" height="24.96" rx="3.12" fill="#8A6845"/>
+  <path d="M217,178 A39,39 0 0 1 295,178 L295,326.2 L217,326.2 Z" fill="url(#stone)"/>
+  <rect x="217" y="199.45" width="78" height="2.34" fill="#6A4E34" opacity="0.35"/>
+  <path d="M224.8,248.09935483870967L240.4,273.2606451612903 M240.4,248.09935483870967L224.8,273.2606451612903 M244.4258064516129,248.09935483870967L252.22580645161293,273.2606451612903L260.02580645161294,248.09935483870967 M266.56774193548387,248.09935483870967L266.56774193548387,273.2606451612903 M275.6258064516129,248.09935483870967L275.6258064516129,273.2606451612903 M284.68387096774194,248.09935483870967L284.68387096774194,273.2606451612903" fill="none" stroke="#5B4127"
+      stroke-width="5.03225806451613" stroke-linecap="butt" stroke-linejoin="miter"/>
+</svg>
