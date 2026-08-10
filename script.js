@@ -9,8 +9,13 @@ const WESTERN_WALL_POSITION = { latitude: 31.776930, longitude: 35.234524 };
 // מזהי הקוביות ההלכתיות המבוססות על שעה זמנית (לצורך ניקוי בזמן שאין זריחה/שקיעה)
 const DAILY_ZMAN_IDS = [
   'alot-hashachar', 'misheyakir', 'sof-zman-shema', 'sof-zman-tefila',
-  'chatzot-day', 'mincha-gedola', 'plag-hamincha', 'chatzot-night'
+  'chatzot-day', 'mincha-gedola', 'plag-hamincha',
+  'tzeit-hakochavim', 'tzeit-rabbeinu-tam', 'chatzot-night'
 ];
+
+// דקות קבועות אחרי השקיעה לצאת הכוכבים לפי מנהג ישראל הרווח.
+// זו הכרעה הלכתית ולא נתון אסטרונומי - יש נוהגים ב-13.5, 20 או 24 דקות.
+const TZEIT_MINUTES_AFTER_SUNSET = 18;
 
 // שמות הזמנים לסרגל "הזמן הבא". הנץ והשקיעה אינם קוביות זמן, ולכן הם
 // מזוהים במפתחות נפרדים שממופים לקוביית "זריחה ושקיעה".
@@ -22,6 +27,8 @@ const ZMAN_LABELS = {
   'chatzot-day': 'חצות היום',
   'mincha-gedola': 'מנחה גדולה',
   'plag-hamincha': 'פלג המנחה',
+  'tzeit-hakochavim': 'צאת הכוכבים',
+  'tzeit-rabbeinu-tam': 'צאת הכוכבים (ר"ת)',
   'chatzot-night': 'חצות הלילה',
   'sunrise': 'הנץ החמה',
   'sunset': 'שקיעה'
@@ -48,6 +55,22 @@ const state = {
 // כיוון המכשיר האמיתי (מעלות מצפון, בכיוון השעון) - null כל עוד לא הופעל מצפן חי
 // או שהדפדפן לא מספק חיישן כיוון מהימן.
 let deviceHeading = null;
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+// אייקון מתוך מאגר הסמלים שב-index.html. חייב createElementNS - אלמנטי SVG
+// שנוצרים עם createElement רגיל מקבלים namespace של HTML ולא נרנדרים.
+function createIcon(name) {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('class', 'icon');
+  svg.setAttribute('aria-hidden', 'true');
+
+  const use = document.createElementNS(SVG_NS, 'use');
+  use.setAttribute('href', '#' + name);
+
+  svg.appendChild(use);
+  return svg;
+}
 
 function updateCurrentTime() {
   const now = new Date();
@@ -116,18 +139,17 @@ function handleLocation(latitude, longitude) {
   updateCityName(latitude, longitude);
 }
 
+// שם היישוב נוגע לכל הזמנים בעמוד ולכן הוא מוצג בפס התאריך, ולא בתוך
+// כותרת של קוביה בודדת שאיבדה בגללו את התווית שלה.
 function setCityTitle(city) {
+  const container = document.getElementById('location-name');
+  const text = document.getElementById('location-name-text');
+  if (!container || !text) return;
+
   // שם היישוב מגיע ממקור חיצוני הניתן לעריכה (OpenStreetMap), ולכן הוא
   // מוזרק כטקסט בלבד ולעולם לא כ-HTML.
-  const title = document.getElementById('sun-times-title');
-  title.textContent = '';
-
-  const icon = document.createElement('span');
-  icon.className = 'icon';
-  icon.textContent = '📍';
-
-  title.appendChild(icon);
-  title.appendChild(document.createTextNode(city));
+  text.textContent = city;
+  container.hidden = false;
 }
 
 function roundCoordinate(value) {
@@ -323,7 +345,7 @@ function displayZmanitTime(now, todaySunrise, todaySunset, prevSunset, nextSunri
   const zmanMinutes = Math.floor((zmanFloat - zmanHours) * 60);
   const zmanDisplay = `${String(zmanHours).padStart(2, '0')}:${String(zmanMinutes).padStart(2, '0')}`;
   const zmanMinutesLength = Math.round(zmanitHourMs / 60000);
-  const icon = zmanType === 'יום' ? '☀️' : '🌙';
+  const iconName = zmanType === 'יום' ? 'i-sun' : 'i-moon';
 
   const container = document.getElementById('custom-time');
   container.textContent = '';
@@ -335,10 +357,7 @@ function displayZmanitTime(now, todaySunrise, todaySunset, prevSunset, nextSunri
 
   const typeEl = document.createElement('span');
   typeEl.className = 'zman-type';
-  const iconEl = document.createElement('span');
-  iconEl.className = 'icon';
-  iconEl.textContent = icon;
-  typeEl.appendChild(iconEl);
+  typeEl.appendChild(createIcon(iconName));
   typeEl.appendChild(document.createTextNode(zmanType));
 
   const lengthEl = document.createElement('span');
@@ -351,9 +370,93 @@ function displayZmanitTime(now, todaySunrise, todaySunset, prevSunset, nextSunri
   applyTheme(zmanType);
 }
 
+// ============================================================
+// ערכת נושא
+// ------------------------------------------------------------
+// שלושה מצבים: אוטומטי (לפי הזריחה והשקיעה במיקום בפועל), בהיר וכהה.
+// ההעדפה נשמרת מקומית. עד שמתקבל המיקום נשארת הערכה ש-app-init.js קבע
+// לפי prefers-color-scheme.
+// ============================================================
+const THEME_KEY = 'zmanim:theme';
+const THEME_MODES = ['auto', 'day', 'night'];
+
+const THEME_UI = {
+  auto: { icon: 'i-theme-auto', label: 'אוטומטית (לפי השעה)' },
+  day: { icon: 'i-sun', label: 'בהירה' },
+  night: { icon: 'i-moon', label: 'כהה' }
+};
+
+// צבע סרגל המערכת בדפדפני מובייל - חייב להתאים לראש הגרדיאנט של הערכה.
+const THEME_COLORS = { day: '#cdeefd', night: '#0f2027' };
+
+const themeState = {
+  preference: 'auto',
+  // הערכה הנגזרת מהשמש. null כל עוד לא התקבל מיקום.
+  automatic: null
+};
+
+function readThemePreference() {
+  try {
+    const stored = localStorage.getItem(THEME_KEY);
+    return THEME_MODES.indexOf(stored) === -1 ? 'auto' : stored;
+  } catch (error) {
+    return 'auto';
+  }
+}
+
+function writeThemePreference(preference) {
+  try {
+    localStorage.setItem(THEME_KEY, preference);
+  } catch (error) {
+    // localStorage עשוי להיות חסום - ההעדפה פשוט לא תישמר בין הפעלות.
+  }
+}
+
+function resolvedTheme() {
+  if (themeState.preference !== 'auto') return themeState.preference;
+  if (themeState.automatic !== null) return themeState.automatic;
+  // עדיין אין מיקום: משאירים את מה ש-app-init.js קבע, בלי הבהוב מיותר.
+  return document.documentElement.classList.contains('night') ? 'night' : 'day';
+}
+
+function renderTheme() {
+  const theme = resolvedTheme();
+  const root = document.documentElement;
+
+  root.classList.remove('day', 'night');
+  root.classList.add(theme);
+
+  const meta = document.getElementById('theme-color-meta');
+  if (meta) meta.setAttribute('content', THEME_COLORS[theme]);
+
+  const button = document.getElementById('theme-button');
+  const iconUse = document.getElementById('theme-icon');
+  if (button && iconUse) {
+    const ui = THEME_UI[themeState.preference];
+    iconUse.setAttribute('href', '#' + ui.icon);
+    button.setAttribute('aria-label', `ערכת נושא: ${ui.label}. לחצו להחלפה`);
+    button.setAttribute('title', `ערכת נושא: ${ui.label}`);
+  }
+}
+
 function applyTheme(zmanType) {
-  document.body.classList.remove('day', 'night');
-  document.body.classList.add(zmanType === 'יום' ? 'day' : 'night');
+  themeState.automatic = zmanType === 'יום' ? 'day' : 'night';
+  renderTheme();
+}
+
+function initThemeButton() {
+  themeState.preference = readThemePreference();
+  renderTheme();
+
+  const button = document.getElementById('theme-button');
+  if (!button) return;
+
+  button.addEventListener('click', () => {
+    const nextIndex = (THEME_MODES.indexOf(themeState.preference) + 1) % THEME_MODES.length;
+    themeState.preference = THEME_MODES[nextIndex];
+    writeThemePreference(themeState.preference);
+    renderTheme();
+  });
 }
 
 function formatHM(date) {
@@ -391,7 +494,11 @@ function computeDailyZmanim(sunrise, sunset) {
     sofZmanShema: new Date(sunrise.getTime() + 3 * shaaZmanitMs),
     sofZmanTefila: new Date(sunrise.getTime() + 4 * shaaZmanitMs),
     minchaGedola: new Date(sunrise.getTime() + 6.5 * shaaZmanitMs),
-    plagHamincha: new Date(sunrise.getTime() + 10.75 * shaaZmanitMs)
+    plagHamincha: new Date(sunrise.getTime() + 10.75 * shaaZmanitMs),
+    // צאת הכוכבים בדקות קבועות אחרי השקיעה (מנהג ישראל), ולעומתו שיטת
+    // רבנו תם - 72 דקות זמניות, בבואה מדויקת של עלות השחר שלמעלה.
+    tzeitHakochavim: new Date(sunset.getTime() + TZEIT_MINUTES_AFTER_SUNSET * 60000),
+    tzeitRabbeinuTam: new Date(sunset.getTime() + 1.2 * shaaZmanitMs)
   };
 }
 
@@ -424,6 +531,8 @@ function displayDailyZmanim(now, times, prevTimes, nextTimes) {
     ['chatzot-day', times.solarNoon],
     ['mincha-gedola', daily.minchaGedola],
     ['plag-hamincha', daily.plagHamincha],
+    ['tzeit-hakochavim', daily.tzeitHakochavim],
+    ['tzeit-rabbeinu-tam', daily.tzeitRabbeinuTam],
     ['chatzot-night', chatzotNight]
   ];
 
@@ -722,44 +831,52 @@ function updateDateBar() {
   });
 
   const hebrew = getFormattedHebrewDate(now);
-  document.getElementById('date-bar').textContent = `${gregorian} | ${hebrew}`;
+  document.getElementById('date-bar-text').textContent = `${gregorian} | ${hebrew}`;
 }
 
 function initMenu() {
-  const menuToggle = document.querySelector('.menu-toggle');
+  const menuToggle = document.getElementById('menu-toggle');
   const menuClose = document.querySelector('.menu-close');
-  const sideMenu = document.querySelector('.side-menu');
+  const sideMenu = document.getElementById('side-menu');
   const overlay = document.querySelector('.overlay');
 
-  function toggleMenu() {
-    sideMenu.classList.toggle('active');
-    overlay.classList.toggle('active');
+  function setMenuOpen(open) {
+    sideMenu.classList.toggle('active', open);
+    overlay.classList.toggle('active', open);
+
+    sideMenu.setAttribute('aria-hidden', open ? 'false' : 'true');
+    menuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    menuToggle.setAttribute('aria-label', open ? 'סגירת התפריט' : 'פתיחת התפריט');
+
+    // החזרת המיקוד: בפתיחה לכפתור הסגירה, ובסגירה לכפתור שממנו נפתח
+    // התפריט - אחרת משתמש מקלדת "מאבד" את מקומו בדף.
+    if (open) {
+      menuClose.focus();
+    } else if (document.activeElement && sideMenu.contains(document.activeElement)) {
+      menuToggle.focus();
+    }
   }
 
-  function closeMenu() {
-    sideMenu.classList.remove('active');
-    overlay.classList.remove('active');
-  }
+  menuToggle.addEventListener('click', () => setMenuOpen(!sideMenu.classList.contains('active')));
+  menuClose.addEventListener('click', () => setMenuOpen(false));
+  overlay.addEventListener('click', () => setMenuOpen(false));
 
-  menuToggle.addEventListener('click', toggleMenu);
-  menuClose.addEventListener('click', toggleMenu);
-  overlay.addEventListener('click', toggleMenu);
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && sideMenu.classList.contains('active')) {
+      setMenuOpen(false);
+    }
+  });
 
   document.querySelector('.menu-item.active a').addEventListener('click', event => {
     event.preventDefault();
-    closeMenu();
-  });
-
-  // דפים שטרם נבנו - מונעים ניווט לקישור שבור עד שהם יעלו לאוויר.
-  document.querySelectorAll('.menu-item.soon a').forEach(link => {
-    link.addEventListener('click', event => event.preventDefault());
+    setMenuOpen(false);
   });
 }
 
 function initRefreshButton() {
   const button = document.querySelector('.refresh-button');
   button.addEventListener('click', () => {
-    button.style.transform = 'rotate(360deg)';
+    button.disabled = true;
 
     // מנקים את כל מטמוני ה-Service Worker לפני הרענון, כדי שהכפתור תמיד יביא
     // גרסה טרייה של כל הקבצים - גם script.js/style.css, שמוגשים כרגיל לפי
@@ -814,6 +931,7 @@ function init() {
   updateDateBar();
   updateCurrentTime();
   startLiveUpdates();
+  initThemeButton();
   initMenu();
   initRefreshButton();
   initCompassLiveToggle();

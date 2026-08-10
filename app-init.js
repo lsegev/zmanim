@@ -1,5 +1,33 @@
 'use strict';
 
+// קביעת ערכת הנושא לפני הצביעה הראשונה של הדף.
+// הקובץ נטען ב-head, ולכן <body> עדיין לא קיים - מכאן שמחלקת הערכה יושבת
+// על <html>. בלי זה היה הבזק לבן בכל טעינה בלילה.
+//
+// prefers-color-scheme משמש כניחוש ההתחלתי בלבד: ברגע שמתקבל המיקום,
+// הערכה נקבעת לפי הזריחה והשקיעה בפועל - נתון מדויק יותר מהעדפת המערכת.
+(function () {
+  var THEME_KEY = 'zmanim:theme';
+  var preference = null;
+
+  try {
+    preference = localStorage.getItem(THEME_KEY);
+  } catch (error) {
+    // localStorage עשוי להיות חסום (מצב פרטי) - נופלים לברירת המחדל.
+  }
+
+  var theme;
+  if (preference === 'day' || preference === 'night') {
+    theme = preference;
+  } else {
+    theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'night' : 'day';
+  }
+
+  document.documentElement.classList.remove('day', 'night');
+  document.documentElement.classList.add(theme);
+}());
+
 // רישום ה-Service Worker וניהול העדכונים.
 // הקובץ חיצוני (ולא inline) כדי לאפשר Content-Security-Policy ללא 'unsafe-inline'.
 (function () {
