@@ -19,25 +19,73 @@ import sharp from 'sharp';
 const SIZE = 512;
 const C = SIZE / 2;
 
-/** Roman numerals as stroked paths — no font needed, identical on every host. */
-function romanXVIII(cx, cy, h, stroke, color) {
-  const gw = h * 0.62; // width of an X or a V
+const arg = (name, fallback) => {
+  const i = process.argv.indexOf(`--${name}`);
+  return i === -1 ? fallback : process.argv[i + 1];
+};
+
+// The numeral carved into the stone.
+//   X     — Legio X Fretensis, garrisoned in Jerusalem, which built and
+//           maintained the roads these milestones marked.
+//   XVIII — the eighteen minutes of a halachic mil, which also reads as ח״י.
+const NUMERAL = arg('numeral', 'X');
+
+// A short numeral gets a bigger, bolder carving; a long one has to shrink to
+// stay inside the column.
+function numeralMetrics(s, len) {
+  const h = s(Math.max(34, 74 - (len - 1) * 8.5));
+  return { h, stroke: h * 0.2 };
+}
+
+// Roman numerals as stroked paths — no font needed, so the carving renders
+// identically on every host. Advance widths are expressed as a fraction of the
+// glyph height; `I` is as wide as the stroke itself.
+const GLYPH_WIDTH = { I: 0, V: 0.62, X: 0.62, L: 0.46, C: 0.56, D: 0.58, M: 0.82 };
+
+function glyphPath(ch, x, top, bot, w, stroke) {
+  const h = bot - top;
+  const mid = x + w / 2;
+  switch (ch) {
+    case 'I':
+      return [`M${x + stroke / 2},${top}L${x + stroke / 2},${bot}`];
+    case 'V':
+      return [`M${x},${top}L${mid},${bot}L${x + w},${top}`];
+    case 'X':
+      return [`M${x},${top}L${x + w},${bot}`, `M${x + w},${top}L${x},${bot}`];
+    case 'L':
+      return [`M${x + stroke / 2},${top}L${x + stroke / 2},${bot}L${x + w},${bot}`];
+    case 'C':
+      return [`M${x + w},${top}A${w / 2},${h / 2} 0 1 0 ${x + w},${bot}`];
+    case 'D':
+      return [
+        `M${x + stroke / 2},${top}L${x + stroke / 2},${bot}`,
+        `M${x + stroke / 2},${top}A${w - stroke / 2},${h / 2} 0 0 1 ${x + stroke / 2},${bot}`,
+      ];
+    case 'M':
+      return [`M${x},${bot}L${x},${top}L${mid},${top + h * 0.72}L${x + w},${top}L${x + w},${bot}`];
+    default:
+      throw new Error(`no glyph for "${ch}" — supported: ${Object.keys(GLYPH_WIDTH).join('')}`);
+  }
+}
+
+function romanNumeral(text, cx, cy, h, stroke, color) {
+  const chars = [...text.toUpperCase()];
+  const widthOf = (ch) => {
+    if (!(ch in GLYPH_WIDTH)) throw new Error(`no glyph for "${ch}"`);
+    return GLYPH_WIDTH[ch] === 0 ? stroke : GLYPH_WIDTH[ch] * h;
+  };
   const gap = h * 0.16;
-  const widths = [gw, gw, stroke, stroke, stroke];
-  const total = widths.reduce((a, b) => a + b, 0) + gap * (widths.length - 1);
+  const widths = chars.map(widthOf);
+  const total = widths.reduce((a, b) => a + b, 0) + gap * (chars.length - 1);
   const top = cy - h / 2;
   const bot = cy + h / 2;
+
   let x = cx - total / 2;
   const d = [];
-
-  d.push(`M${x},${top}L${x + gw},${bot}`, `M${x + gw},${top}L${x},${bot}`); // X
-  x += gw + gap;
-  d.push(`M${x},${top}L${x + gw / 2},${bot}L${x + gw},${top}`); // V
-  x += gw + gap;
-  for (let i = 0; i < 3; i++) {
-    d.push(`M${x + stroke / 2},${top}L${x + stroke / 2},${bot}`); // III
-    x += stroke + gap;
-  }
+  chars.forEach((ch, i) => {
+    d.push(...glyphPath(ch, x, top, bot, widths[i], stroke));
+    x += widths[i] + gap;
+  });
 
   return `<path d="${d.join(' ')}" fill="none" stroke="${color}"
       stroke-width="${stroke}" stroke-linecap="butt" stroke-linejoin="miter"/>`;
@@ -54,6 +102,7 @@ function columnPath(cx, capY, capR, baseY) {
 // Variant A — "dusk": backlit silhouette, warm gradient sky.
 // ---------------------------------------------------------------------------
 function dusk(s) {
+  const num = numeralMetrics(s, NUMERAL.length);
   const horizon = C + s(126);
   const capR = s(58);
   const capY = C - s(88);
@@ -88,7 +137,7 @@ function dusk(s) {
   <rect x="${C - plinthHalfW}" y="${plinthTop}" width="${plinthHalfW * 2}" height="${s(30)}" rx="${s(5)}" fill="#0A1526"/>
   <path d="${col}" fill="#0A1526"/>
   <path d="${col}" fill="none" stroke="#FFCF8A" stroke-width="${s(3)}" opacity="0.5"/>
-  ${romanXVIII(C, C + s(14), s(40), s(8), '#F6C97E')}`;
+  ${romanNumeral(NUMERAL, C, C + s(14), num.h, num.stroke, '#F6C97E')}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -96,6 +145,7 @@ function dusk(s) {
 // shadow to the right. The shadow is the sundial reading — time itself.
 // ---------------------------------------------------------------------------
 function sundial(s) {
+  const num = numeralMetrics(s, NUMERAL.length);
   const horizon = C + s(118);
   const capR = s(50);
   const capY = C - s(100);
@@ -148,13 +198,14 @@ function sundial(s) {
   <rect x="${C - plinthHalfW}" y="${plinthTop}" width="${plinthHalfW * 2}" height="${s(32)}" rx="${s(4)}" fill="#8A6845"/>
   <path d="${col}" fill="url(#stone)"/>
   <rect x="${C - capR}" y="${capY + capR * 0.55}" width="${capR * 2}" height="${s(3)}" fill="#6A4E34" opacity="0.35"/>
-  ${romanXVIII(C - s(4), C + s(6), s(38), s(7), '#5B4127')}`;
+  ${romanNumeral(NUMERAL, C, C + s(6), num.h, num.stroke, '#5B4127')}`;
 }
 
 // ---------------------------------------------------------------------------
 // Variant C — "flat": no gradients, maximum legibility at small sizes.
 // ---------------------------------------------------------------------------
 function flat(s) {
+  const num = numeralMetrics(s, NUMERAL.length);
   const groundY = C + s(122);
   const capR = s(56);
   const capY = C - s(92);
@@ -168,7 +219,7 @@ function flat(s) {
   <rect x="0" y="${groundY}" width="${SIZE}" height="${SIZE - groundY}" fill="#10203C"/>
   <rect x="${C - plinthHalfW}" y="${C + s(88)}" width="${plinthHalfW * 2}" height="${s(34)}" rx="${s(6)}" fill="#F4E7CE"/>
   <path d="${col}" fill="#F4E7CE"/>
-  ${romanXVIII(C, C + s(16), s(42), s(9), '#16294D')}`;
+  ${romanNumeral(NUMERAL, C, C + s(16), num.h, num.stroke, '#16294D')}`;
 }
 
 const variants = { dusk, sundial, flat };
@@ -190,11 +241,6 @@ const targets = [
   { file: 'apple-touch-icon.png', scale: 0.88, size: 180 },
   { file: 'favicon-32.png', scale: 1, size: 32 },
 ];
-
-const arg = (name, fallback) => {
-  const i = process.argv.indexOf(`--${name}`);
-  return i === -1 ? fallback : process.argv[i + 1];
-};
 
 const variant = arg('variant', 'sundial');
 const outDir = arg('out', process.cwd());
