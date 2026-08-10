@@ -818,17 +818,11 @@ function initCompassLiveToggle() {
   });
 }
 
-// העומר משתנה בשקיעה ולא בחצות - ה-Intl Hebrew calendar מחשב תאריך עברי לפי חצות
-// אזרחי, ולכן אחרי השקיעה מתקדמים ליום הלועזי הבא כדי לקבל את היום העברי ההלכתי הנכון.
-function getEffectiveOmerDate(now, todaySunset) {
-  if (isValidDate(todaySunset) && now >= todaySunset) {
-    return new Date(now.getTime() + 24 * 60 * 60 * 1000);
-  }
-  return now;
-}
-
-function getOmerDay(now, todaySunset) {
-  const effectiveDate = getEffectiveOmerDate(now, todaySunset);
+function getOmerDay(now, dayBoundary) {
+  // אותו גבול שבו מתחלף פס התאריך: היום העברי אחד הוא, ואין סיבה שהעומר
+  // יתקדם בשקיעה בעוד שהתאריך שמעליו עדיין מראה את היום הקודם.
+  // צאת הכוכבים אף מתאים כאן יותר מהשקיעה, שכן זמן הספירה הוא בלילה.
+  const effectiveDate = getEffectiveHebrewDate(now, dayBoundary);
   const { day, month } = getHebrewDateParts(effectiveDate);
 
   // startsWith כדי לצמצם רגישות לשינויי כתיב בין מנועי Intl (למשל "סיון"/"סיוון").
@@ -838,13 +832,13 @@ function getOmerDay(now, todaySunset) {
   return null;
 }
 
-function displayOmerCard(now, todaySunset) {
+function displayOmerCard(now, dayBoundary) {
   const section = document.getElementById('omer-section');
   const countEl = document.getElementById('omer-count');
   const detailEl = document.getElementById('omer-detail');
   if (!section || !countEl) return;
 
-  const omerDay = getOmerDay(now, todaySunset);
+  const omerDay = getOmerDay(now, dayBoundary);
   if (omerDay === null) {
     section.hidden = true;
     return;
@@ -1004,12 +998,14 @@ function updateAll() {
   const prevTimes = getSunTimes(prevDay, state.latitude, state.longitude);
   const nextTimes = getSunTimes(nextDay, state.latitude, state.longitude);
 
-  // צאת הכוכבים של היום הנוכחי הוא הגבול שבו מתחלף התאריך העברי.
+  // צאת הכוכבים של היום הנוכחי הוא הגבול שבו מתחלף היום העברי - גם בפס
+  // התאריך וגם בספירת העומר, כדי ששניהם לא יראו ימים שונים באותו רגע.
   const todayDaily = computeDailyZmanim(times.sunrise, times.sunset);
-  updateDateBar(todayDaily && todayDaily.tzeitHakochavim);
+  const dayBoundary = todayDaily && todayDaily.tzeitHakochavim;
+  updateDateBar(dayBoundary);
 
   displayCompassCard(state.latitude, state.longitude);
-  displayOmerCard(now, times.sunset);
+  displayOmerCard(now, dayBoundary);
 
   if (!hasSunEvents(times)) {
     showSunUnavailable();
