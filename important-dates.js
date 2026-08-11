@@ -26,10 +26,6 @@ function startOfWeek(date) {
   return result;
 }
 
-function formatCivilDate(date) {
-  return date.toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric' });
-}
-
 // יום בשבוע קצר ('יום ה׳') ותאריך עברי בגימטריה ('ל' באב') בנפרד - בלי
 // תאריך לועזי ובלי שנה: השנה חוזרת על עצמה בכל הכרטיסים באותו שבוע ורק
 // מוסיפה רעש. השניים מוחזרים כשדות נפרדים כדי שהתצוגה תוכל לשים כל אחד
@@ -44,17 +40,44 @@ function formatHebrewWeekdayDate(date) {
   };
 }
 
-function formatDateTime(date) {
-  if (!date) return '--';
-  // weekday קצר ('יום ה׳' ולא 'יום חמישי') כדי שהערך לא יתפרש לשלוש שורות
-  // בכרטיס - יש כאן גם תאריך וגם שעה, בשונה מכרטיסי הזמנים הרגילים.
-  return date.toLocaleString('he-IL', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'numeric',
+// זמן בתוך היממה, בשעון ישראל. כל התאריכים בעמוד עבריים, אבל השעה עצמה
+// נשארת מספרית - אין לה ניסוח עברי מקובל.
+function formatTimeOfDay(date) {
+  return date.toLocaleTimeString('he-IL', {
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    timeZone: 'Asia/Jerusalem'
   });
+}
+
+// תאריך עברי מלא לרגע נתון: יום בשבוע, תאריך עברי בגימטריה, ושעה.
+// אין כאן תאריך לועזי בכלל - כל העמוד מדבר בלוח העברי.
+//
+// התאריך העברי נגזר מהיום האזרחי בישראל שבו חל הרגע, ולא מאזור הזמן של
+// המשתמש: מולד או תחילת זמן הם רגעים בשעון ישראל, ובנייד בחו"ל התאריך היה
+// יכול לזוז ביום.
+function formatHebrewDateTime(date) {
+  if (!date) return null;
+  const israelDay = israelCivilDate(date);
+  const { day, month } = getHebrewDateParts(israelDay);
+  return {
+    weekday: date.toLocaleDateString('he-IL', { weekday: 'short', timeZone: 'Asia/Jerusalem' }),
+    hebrewDate: gematria(day) + ' ב' + month,
+    time: formatTimeOfDay(date)
+  };
+}
+
+// חצות היום האזרחי בישראל שבו חל instant - נקודה בטוחה לגזירת התאריך העברי
+// בלי תלות באזור הזמן של המכשיר.
+function israelCivilDate(instant) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jerusalem',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(instant);
+  const get = type => Number(parts.find(p => p.type === type).value);
+  return new Date(get('year'), get('month') - 1, get('day'), 12);
 }
 
 function buildDateCard(entry) {
@@ -195,6 +218,20 @@ function getDistinctMoladsForWeek(weekStart, weekEnd) {
     .map(c => ({ molad: c.molad, month: JewishCalendar.getHebrewDateParts(c.anchor).month }));
 }
 
+// כותב תאריך עברי + שעה לתוך אלמנט ערך, בשלוש שורות (יום בשבוע / תאריך
+// עברי / שעה) - באותה צורה שבה בנויים כרטיסי ראש חודש.
+function fillHebrewDateTime(element, date) {
+  const label = formatHebrewDateTime(date);
+  element.textContent = '';
+  const lines = [label.weekday, label.hebrewDate, label.time];
+  lines.forEach((line, i) => {
+    if (i > 0) element.appendChild(document.createElement('br'));
+    const span = document.createElement('span');
+    span.textContent = line;
+    element.appendChild(span);
+  });
+}
+
 function renderMolad(weekStart, weekEnd) {
   const section = document.getElementById('molad-section');
 
@@ -207,30 +244,47 @@ function renderMolad(weekStart, weekEnd) {
   }
 
   document.getElementById('molad-month-name').textContent = relevant.month;
-  document.getElementById('molad-time').textContent = formatDateTime(relevant.molad);
+  fillHebrewDateTime(document.getElementById('molad-time'), relevant.molad);
   section.hidden = false;
 }
 
-// חלון ברכת הלבנה מוצג אם יש חפיפה בין השבוע הנוכחי לבין הטווח שבין תחילת
-// הזמן (ספרדים, הכי מוקדם) לסוף הזמן - בודקים את כל החודשים הרלוונטיים
-// לשבוע (ראו getDistinctMoladsForWeek) ומציגים את הראשון שחופף.
+// כל אחד משלושת זמני ברכת הלבנה מוצג רק אם הוא עצמו חל השבוע.
+//
+// קודם הוצג החלון כולו ברגע שהיה חפיפה כלשהי עם השבוע, וכך "סוף הזמן" של
+// עוד שבועיים או "תחילת הזמן" של השבוע הבא הופיעו ככרטיס - מידע שאינו נוגע
+// לשבוע הנוכחי ורק מבלבל. עכשיו כרטיס שאינו חל השבוע פשוט מוסתר, ואם אף
+// אחד מהשלושה אינו חל - הסעיף כולו נעלם.
 function renderBirkatHalevana(weekStart, weekEnd) {
   const section = document.getElementById('birkat-halevana-section');
 
-  const candidateMolads = getDistinctMoladsForWeek(weekStart, weekEnd);
-  const window_ = candidateMolads
-    .map(c => JewishCalendar.getBirkatHalevanaWindowForMolad(c.molad))
-    .find(w => w && w.end >= weekStart && w.sephardicStart < weekEnd);
+  const inWeek = date => date >= weekStart && date < weekEnd;
 
-  if (!window_) {
-    section.hidden = true;
-    return;
+  // כל המולדות הרלוונטיים לשבוע, לא רק הראשון: תחילת הזמן של חודש אחד
+  // וסוף הזמן של החודש הקודם יכולים ליפול באותו שבוע.
+  const windows = getDistinctMoladsForWeek(weekStart, weekEnd)
+    .map(c => JewishCalendar.getBirkatHalevanaWindowForMolad(c.molad))
+    .filter(w => w);
+
+  const rows = [
+    { id: 'bh-row-sephardic', valueId: 'bh-start-sephardic', pick: w => w.sephardicStart },
+    { id: 'bh-row-ashkenazic', valueId: 'bh-start-ashkenazic', pick: w => w.ashkenazicStart },
+    { id: 'bh-row-end', valueId: 'bh-end', pick: w => w.end }
+  ];
+
+  let anyShown = false;
+  for (const row of rows) {
+    const match = windows.map(row.pick).find(inWeek);
+    const card = document.getElementById(row.id);
+    if (match) {
+      fillHebrewDateTime(document.getElementById(row.valueId), match);
+      card.hidden = false;
+      anyShown = true;
+    } else {
+      card.hidden = true;
+    }
   }
 
-  document.getElementById('bh-start-sephardic').textContent = formatDateTime(window_.sephardicStart);
-  document.getElementById('bh-start-ashkenazic').textContent = formatDateTime(window_.ashkenazicStart);
-  document.getElementById('bh-end').textContent = formatDateTime(window_.end);
-  section.hidden = false;
+  section.hidden = !anyShown;
 }
 
 // טווח התאריך העברי של השבוע, בגימטריה. אם השבוע כולו בתוך אותו חודש עברי
@@ -247,12 +301,13 @@ function formatHebrewWeekRange(startDate, endDate) {
   return gematria(start.day) + ' ב' + start.month + ' – ' + gematria(end.day) + ' ב' + end.month;
 }
 
+// כותרת השבוע בתאריך עברי בלבד, בלי הטווח הלועזי שהיה כאן קודם: כל שאר
+// העמוד מדבר בלוח העברי, והתאריך הלועזי רק הכפיל את אותו מידע.
 function renderWeekRange(weekStart, weekEnd) {
   const lastDay = new Date(weekEnd);
   lastDay.setDate(lastDay.getDate() - 1);
   const label = document.getElementById('week-range');
-  label.textContent = 'השבוע: ' + formatCivilDate(weekStart) + ' – ' + formatCivilDate(lastDay)
-    + ' (' + formatHebrewWeekRange(weekStart, lastDay) + ')';
+  label.textContent = 'השבוע: ' + formatHebrewWeekRange(weekStart, lastDay);
 }
 
 function init() {

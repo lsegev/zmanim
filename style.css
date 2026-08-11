@@ -425,7 +425,10 @@ body {
   color: var(--muted);
 }
 
-.zman-note[hidden] {
+/* display מפורש (block/flex) גובר על תכונת hidden, ולכן צריך לבטל אותו
+   במפורש - אחרת כרטיס או הערה שהוסתרו ב-JS ימשיכו להופיע. */
+.zman-note[hidden],
+.zman-card[hidden] {
   display: none;
 }
 

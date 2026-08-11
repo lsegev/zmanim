@@ -181,18 +181,19 @@
       <h3 class="zman-section-title">
         <svg class="icon" aria-hidden="true"><use href="#i-moon-star" /></svg>ברכת הלבנה
       </h3>
+      <!-- כל כרטיס מוסתר בנפרד אם הזמן שלו אינו חל השבוע. -->
       <div class="zman-grid">
-        <div class="zman-card">
-          <h4>תחילת הזמן (ספרדים)</h4>
-          <div id="bh-start-sephardic" class="num zman-value-datetime">--</div>
-          <span class="zman-note">מוצאי היום שבו חל המולד (הערב מוערך לפי 19:00)</span>
-        </div>
-        <div class="zman-card">
+        <div class="zman-card" id="bh-row-ashkenazic" hidden>
           <h4>תחילת הזמן (אשכנזים)</h4>
           <div id="bh-start-ashkenazic" class="num zman-value-datetime">--</div>
-          <span class="zman-note">שבעה ימים מלאים אחרי המולד</span>
+          <span class="zman-note">שלושה ימים אחרי המולד, בערב</span>
         </div>
-        <div class="zman-card">
+        <div class="zman-card" id="bh-row-sephardic" hidden>
+          <h4>תחילת הזמן (ספרדים)</h4>
+          <div id="bh-start-sephardic" class="num zman-value-datetime">--</div>
+          <span class="zman-note">שבעה ימים אחרי המולד, בערב</span>
+        </div>
+        <div class="zman-card" id="bh-row-end" hidden>
           <h4>סוף הזמן</h4>
           <div id="bh-end" class="num zman-value-datetime">--</div>
           <span class="zman-note">מחצית הזמן שבין מולד לחודש הבא</span>

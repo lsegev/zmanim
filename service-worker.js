@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mil-v0.12.3';
+const CACHE_NAME = 'mil-v0.13.0';
 
 // נתיבים יחסיים בלבד: הם נפתרים מול scope של ה-Service Worker (למשל /zmanim/),
 // ולכן עובדים גם כשהאתר מתפרסם בתת-נתיב כמו GitHub Pages.
