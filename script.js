@@ -47,6 +47,10 @@ const GEOCODE_PRECISION = 3;
 const CITY_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const CITY_CACHE_PREFIX = 'zmanim:city:';
 
+// המיקום האחרון שהתקבל, לשימוש שאר העמודים בקביעת ערכת יום/לילה.
+// המפתח משותף ל-app-init.js - שינוי כאן מחייב שינוי גם שם.
+const POSITION_CACHE_KEY = 'zmanim:position';
+
 // מצב האפליקציה
 const state = {
   latitude: null,
@@ -144,9 +148,26 @@ function handleLocation(latitude, longitude, source) {
   state.locationSource = source;
   state.sunTimesCache.clear();
 
+  writeCachedPosition(latitude, longitude);
   updateLocationNotice();
   updateAll();
   updateCityName(latitude, longitude);
+}
+
+// המיקום נשמר כדי ששאר העמודים יוכלו להחליט על ערכת יום/לילה לפי השמש.
+// רק דף הבית מבקש מיקום ורק הוא טוען את מנוע הזמנים; בלי המטמון הזה
+// app-init.js בעמודים האחרים לא ידע מתי שוקעת השמש, וערכה "אוטומטית"
+// הייתה נופלת שם ל-prefers-color-scheme - כלומר בהירה בלילה.
+function writeCachedPosition(latitude, longitude) {
+  try {
+    localStorage.setItem(POSITION_CACHE_KEY, JSON.stringify({
+      latitude: latitude,
+      longitude: longitude,
+      ts: Date.now()
+    }));
+  } catch (error) {
+    // אחסון חסום - שאר העמודים פשוט ימשיכו לפי העדפת המערכת.
+  }
 }
 
 // מיקום שאינו מ-GPS פוגע בכיוון התפילה הרבה יותר מאשר בזמנים: זיהוי לפי IP
