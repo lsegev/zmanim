@@ -34,8 +34,14 @@ function gematria(num) {
     }
   }
 
+  // סימון מספר בעברית: גרשיים לפני האות האחרונה כשיש כמה אותיות (כ"ו),
+  // וגרש אחרי אות בודדת (ל׳). בלי הגרש הבודד נראה "ל באב" כמו מילה קטועה
+  // ולא כמו תאריך.
   if (result.length > 1) {
-    result = result.slice(0, -1) + '"' + result.slice(-1);
+    return result.slice(0, -1) + '"' + result.slice(-1);
+  }
+  if (result.length === 1) {
+    return result + '׳';
   }
   return result;
 }

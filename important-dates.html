@@ -18,7 +18,7 @@
     img-src 'self' data:;
     font-src 'self';
     manifest-src 'self';
-    connect-src 'self' https://firestore.googleapis.com;
+    connect-src 'self';
     base-uri 'none';
     form-action 'none';
     object-src 'none'">
@@ -34,17 +34,17 @@
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
-  <title>רוג'ום — אבני דרך</title>
-  <meta name="description" content="רוג'ום: אוסף של רעיונות תורניים קצרים, אבן אחר אבן לאורך הדרך.">
+  <title>תאריכים חשובים השבוע — מיל</title>
+  <meta name="description" content="ראש חודש, מולד הירח, חלון ברכת הלבנה, חגים, צומות וימים ישראליים - כל מה שחל השבוע בלוח העברי, במקום אחד.">
 
-  <meta property="og:title" content="רוג'ום — אבני דרך" />
-  <meta property="og:description" content="אוסף של רעיונות תורניים קצרים, אבן אחר אבן לאורך הדרך." />
+  <meta property="og:title" content="תאריכים חשובים השבוע — מיל" />
+  <meta property="og:description" content="ראש חודש, מולד, ברכת הלבנה, חגים וימים ישראליים - מה שחל השבוע." />
   <meta property="og:type" content="website" />
   <meta property="og:locale" content="he_IL" />
   <meta property="og:site_name" content="מיל" />
 
   <meta http-equiv="Content-Language" content="he">
-  <link rel="canonical" href="https://mil-time.web.app/rogem.html">
+  <link rel="canonical" href="https://mil-time.web.app/important-dates.html">
 
   <link rel="stylesheet" href="style.css">
   <script src="app-init.js"></script>
@@ -65,6 +65,23 @@
       <rect x="3.4" y="5" width="17.2" height="15.8" rx="2.6" />
       <path d="M3.4 10h17.2M8.4 2.9v4.2M15.6 2.9v4.2" />
     </symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24">
+      <path d="M20.5 14.6A8.7 8.7 0 0 1 9.4 3.5a8.8 8.8 0 1 0 11.1 11.1Z" />
+    </symbol>
+    <symbol id="i-moon-star" viewBox="0 0 24 24">
+      <path d="M20.6 15.4A8.4 8.4 0 0 1 9.9 4.7a8.5 8.5 0 1 0 10.7 10.7Z" />
+      <path d="M17.4 2.6l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8Z" />
+    </symbol>
+    <symbol id="i-wheat" viewBox="0 0 24 24">
+      <path d="M12 21.4V7.2" />
+      <path d="M12 7.2c0-2 1.3-3.4 3.2-3.4 0 2-1.3 3.4-3.2 3.4ZM12 7.2c0-2-1.3-3.4-3.2-3.4 0 2 1.3 3.4 3.2 3.4Z" />
+      <path d="M12 12c0-2 1.3-3.4 3.2-3.4 0 2-1.3 3.4-3.2 3.4ZM12 12c0-2-1.3-3.4-3.2-3.4 0 2 1.3 3.4 3.2 3.4Z" />
+      <path d="M12 16.8c0-2 1.3-3.4 3.2-3.4 0 2-1.3 3.4-3.2 3.4ZM12 16.8c0-2-1.3-3.4-3.2-3.4 0 2 1.3 3.4 3.2 3.4Z" />
+    </symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24">
+      <path d="M6 21.4V3.6" />
+      <path d="M6 4.4c3-1.4 5.6-1.4 8.6 0 3 1.4 5.6 1.4 8.6 0v10c-3 1.4-5.6 1.4-8.6 0-3-1.4-5.6-1.4-8.6 0Z" />
+    </symbol>
     <!-- רוג'ום: ערימת אבנים שהולכי דרך מקימים. שלוש אבנים בלבד, בקווי מתאר
          לא-סימטריים - ארבע אבנים או יותר נמרחות לצורה אחת בגודל 22px. -->
     <symbol id="i-rogem" viewBox="0 0 24 24">
@@ -81,9 +98,6 @@
     </symbol>
     <symbol id="i-close" viewBox="0 0 24 24">
       <path d="M6.2 6.2 17.8 17.8M17.8 6.2 6.2 17.8" />
-    </symbol>
-    <symbol id="i-chevron" viewBox="0 0 24 24">
-      <path d="M14.5 5.5 8 12l6.5 6.5" />
     </symbol>
   </svg>
 
@@ -117,14 +131,14 @@
             <span class="menu-badge">בקרוב</span>
           </a>
         </li>
-        <li class="menu-item">
-          <a href="important-dates.html">
+        <li class="menu-item active">
+          <a href="important-dates.html" aria-current="page">
             <svg class="menu-icon" aria-hidden="true"><use href="#i-calendar" /></svg>
             <span class="menu-text">תאריכים חשובים השבוע</span>
           </a>
         </li>
-        <li class="menu-item active">
-          <a href="rogem.html" aria-current="page">
+        <li class="menu-item">
+          <a href="rogem.html">
             <svg class="menu-icon" aria-hidden="true"><use href="#i-rogem" /></svg>
             <span class="menu-text">רוג'ום<span class="menu-subtext">אבני דרך</span></span>
           </a>
@@ -136,44 +150,62 @@
           </a>
         </li>
       </ul>
-      <p class="menu-note">
-        המיקום שלך משמש לחישוב זמני היום בלבד ונשלח לשירותי זיהוי מיקום חיצוניים
-        בדיוק מעוגל של כ-100 מטר. הוא אינו נשמר בשרת כלשהו.
-        <a href="about.html">עוד על הפרטיות</a>
-      </p>
     </nav>
   </div>
   <div class="overlay"></div>
 
-  <main class="page rogem-page">
+  <main class="page important-dates-page">
     <header class="page-header">
-      <h1>רוג&rsquo;ום</h1>
-      <p class="page-lede">אבני דרך — רעיון קטן, אחד בכל פעם.</p>
+      <h1>תאריכים חשובים השבוע</h1>
+      <p class="page-lede" id="week-range">...</p>
     </header>
 
-    <!-- מצב טעינה/שגיאה/ריק. מוחלף בכרטיסים ברגע שהקובץ נטען. -->
-    <p class="rogem-status" id="rogem-status">טוען…</p>
+    <section class="zman-section" id="important-dates-list">
+      <p class="zman-note" id="important-dates-empty" hidden>אין תאריכים מיוחדים השבוע.</p>
+    </section>
 
-    <!-- aria-live מכריז על החלפת כרטיס לקורא מסך, שאחרת לא היה מקבל
-         שום חיווי על כך שהתוכן התחלף בגלילה. -->
-    <div class="rogem-viewport" id="rogem-viewport" hidden
-         role="region" aria-label="רעיונות" aria-live="polite" tabindex="0">
-      <div class="rogem-track" id="rogem-track"></div>
-    </div>
+    <section class="zman-section" id="molad-section" hidden>
+      <h3 class="zman-section-title">
+        <svg class="icon" aria-hidden="true"><use href="#i-moon" /></svg>מולד הירח
+      </h3>
+      <div class="zman-grid">
+        <div class="zman-card">
+          <h4><svg class="icon" aria-hidden="true"><use href="#i-moon" /></svg>מולד <span id="molad-month-name">--</span></h4>
+          <div id="molad-time" class="num zman-value-datetime">--</div>
+          <span class="zman-note" id="molad-note">שעון ישראל</span>
+        </div>
+      </div>
+    </section>
 
-    <!-- שורת הבקרה היא ltr כדי שסדר הכפתורים יתאים לסדר הכרטיסים: החדש
-         ביותר משמאל, והדפדוף ימינה מוביל אל הישנים. -->
-    <div class="rogem-controls" id="rogem-controls" hidden>
-      <button class="icon-button rogem-nav" id="rogem-prev" type="button" aria-label="הרעיון החדש יותר">
-        <svg class="icon" aria-hidden="true"><use href="#i-chevron" /></svg>
-      </button>
-      <div class="rogem-dots" id="rogem-dots"></div>
-      <button class="icon-button rogem-nav" id="rogem-next" type="button" aria-label="הרעיון הישן יותר">
-        <svg class="icon rogem-chevron-next" aria-hidden="true"><use href="#i-chevron" /></svg>
-      </button>
-    </div>
+    <section class="zman-section" id="birkat-halevana-section" hidden>
+      <h3 class="zman-section-title">
+        <svg class="icon" aria-hidden="true"><use href="#i-moon-star" /></svg>ברכת הלבנה
+      </h3>
+      <div class="zman-grid">
+        <div class="zman-card">
+          <h4>תחילת הזמן (ספרדים)</h4>
+          <div id="bh-start-sephardic" class="num zman-value-datetime">--</div>
+          <span class="zman-note">מוצאי היום שבו חל המולד (הערב מוערך לפי 19:00)</span>
+        </div>
+        <div class="zman-card">
+          <h4>תחילת הזמן (אשכנזים)</h4>
+          <div id="bh-start-ashkenazic" class="num zman-value-datetime">--</div>
+          <span class="zman-note">שבעה ימים מלאים אחרי המולד</span>
+        </div>
+        <div class="zman-card">
+          <h4>סוף הזמן</h4>
+          <div id="bh-end" class="num zman-value-datetime">--</div>
+          <span class="zman-note">מחצית הזמן שבין מולד לחודש הבא</span>
+        </div>
+      </div>
+      <p class="zman-hint">מברכים בלילה, בעמידה, כשהלבנה נראית בשמים בבירור.</p>
+    </section>
 
-    <p class="rogem-allread" id="rogem-allread" hidden>קראת את כל הרעיונות</p>
+    <p class="note-inline">
+      החישובים כאן מבוססים על הלוח העברי הכללי ואינם מביאים בחשבון דחיות מקומיות
+      או מנהגי קהילה. תאריכי ימי הזיכרון והעצמאות עשויים לזוז בפועל כשהם חלים
+      סמוך לשבת. לפרטים מדויקים יש להיוועץ בלוח שנה עברי מוסמך או ברב המקום.
+    </p>
 
     <p class="back-home">
       <a href="./">חזרה לזמנים</a>
@@ -182,7 +214,7 @@
 
   <script src="menu.js"></script>
   <script src="hebrew-date.js"></script>
-  <script src="firebase-config.js"></script>
-  <script src="rogem.js"></script>
+  <script src="jewish-calendar.js"></script>
+  <script src="important-dates.js"></script>
 </body>
 </html>

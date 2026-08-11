@@ -848,12 +848,29 @@ function displayOmerCard(now, dayBoundary) {
   countEl.textContent = `היום ${gematria(omerDay)} בעומר`;
 
   if (detailEl) {
-    const weeks = Math.floor((omerDay - 1) / 7);
-    const days = (omerDay - 1) % 7;
-    detailEl.textContent = weeks > 0
-      ? `${gematria(weeks)} שבוע${weeks > 1 ? 'ות' : ''}${days > 0 ? ' ו' + gematria(days) + ' ימים' : ''}`
-      : '';
+    detailEl.textContent = omerWeeksLabel(omerDay);
   }
+}
+
+// שורת "שהם X שבועות ו-Y ימים" של ספירת העומר.
+//
+// המספרים כאן נכתבים במילים ולא בגימטריה: זהו נוסח הספירה המדובר ("שני
+// שבועות ויום אחד"), ואות בודדת עם גרש הייתה יוצרת גם ניסוח משובש -
+// "א׳ שבוע" במקום "שבוע אחד", וגם ו' חיבור שנדבקת לגימטריה ומכפילה את
+// האות ("וו׳ ימים").
+const HEBREW_COUNT_MASCULINE = ['', 'אחד', 'שני', 'שלושה', 'ארבעה', 'חמישה', 'שישה'];
+
+function omerWeeksLabel(omerDay) {
+  const weeks = Math.floor((omerDay - 1) / 7);
+  const days = (omerDay - 1) % 7;
+  if (weeks === 0) return '';
+
+  // "שבוע אחד" אך "שני שבועות": ביחיד המספר בא אחרי שם העצם, ברבים לפניו.
+  const weeksText = weeks === 1 ? 'שבוע אחד' : `${HEBREW_COUNT_MASCULINE[weeks]} שבועות`;
+  if (days === 0) return `שהם ${weeksText}`;
+
+  const daysText = days === 1 ? 'יום אחד' : `${HEBREW_COUNT_MASCULINE[days]} ימים`;
+  return `שהם ${weeksText} ו${daysText}`;
 }
 
 // gematria(), getHebrewDateParts() ו-getFormattedHebrewDate() חיים ב-hebrew-date.js,

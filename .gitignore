@@ -2,3 +2,7 @@ node_modules/
 .firebase/
 *.log
 .DS_Store
+
+# הגדרות מקומיות של Claude Code (הרשאות ונתיבים ספציפיים למכונה).
+# launch.json כן משותף - הוא מתאר איך מריצים את השרת המקומי של הפרויקט.
+.claude/settings.local.json

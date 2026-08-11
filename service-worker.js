@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mil-v0.11.1';
+const CACHE_NAME = 'mil-v0.12.3';
 
 // נתיבים יחסיים בלבד: הם נפתרים מול scope של ה-Service Worker (למשל /zmanim/),
 // ולכן עובדים גם כשהאתר מתפרסם בתת-נתיב כמו GitHub Pages.
@@ -15,6 +15,9 @@ const ASSETS_TO_CACHE = [
   'about.js',
   'rogem.html',
   'rogem.js',
+  'important-dates.html',
+  'important-dates.js',
+  'jewish-calendar.js',
   'firebase-config.js',
   'vendor/suncalc.js',
   'manifest.json',
