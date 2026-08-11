@@ -1397,3 +1397,299 @@ body {
         font-size: 1rem;
     }
 }
+
+/* ============================================================
+   דף הניהול של רוג'ום (admin.html)
+   ------------------------------------------------------------
+   דף פנימי, ללא קישור מהתפריט. משתמש באותם טוקנים כמו שאר
+   האפליקציה, כך שערכת יום/לילה עובדת בלי קוד נוסף.
+   ============================================================ */
+.admin-page {
+    max-width: 720px;
+    padding-bottom: 40px;
+}
+
+.admin-logo {
+    width: 56px;
+    height: 56px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    color: var(--accent);
+}
+
+/* --- מסכי כניסה --- */
+.admin-gate,
+.admin-denied {
+    text-align: center;
+}
+
+.admin-gate-status {
+    margin: 0 0 16px;
+    color: var(--muted);
+}
+
+.admin-gate-actions[hidden] {
+    display: none;
+}
+
+.admin-denied h2 {
+    color: var(--warn);
+}
+
+.admin-user {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 0.9rem;
+    color: var(--muted);
+    padding: 0 4px;
+}
+
+/* --- כפתורים --- */
+.admin-button {
+    font-family: var(--app-font);
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 11px 18px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--chip);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.admin-button:hover:not(:disabled) {
+    background: var(--chip-hover);
+}
+
+.admin-button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.admin-button.primary {
+    border-color: var(--accent-line);
+    background: var(--accent);
+    /* טקסט על רקע האקסנט: בערכת יום האקסנט כהה ובלילה בהיר, ולכן הצבע
+       נקבע לכל ערכה בנפרד ולא בערך אחד קבוע. */
+    color: #fff;
+}
+
+:root.night .admin-button.primary {
+    color: #0f2027;
+}
+
+.admin-button.primary:hover:not(:disabled) {
+    opacity: 0.88;
+    background: var(--accent);
+}
+
+.admin-button.subtle {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* --- הטופס --- */
+.field {
+    margin-bottom: 18px;
+}
+
+.field label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.field input,
+.field textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: var(--app-font);
+    font-size: 1rem;
+    padding: 11px 13px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface-strong);
+    color: var(--text);
+    direction: rtl;
+}
+
+.field textarea {
+    line-height: 1.7;
+    resize: vertical;
+    min-height: 180px;
+}
+
+.field input:focus,
+.field textarea:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.counter {
+    margin: 5px 0 0;
+    font-size: 0.82rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.counter.over {
+    color: var(--needle);
+    font-weight: 700;
+}
+
+.schedule {
+    margin: 6px 0 0;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--accent);
+    min-height: 1.2em;
+}
+
+.admin-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.admin-status {
+    margin: 12px 0 0;
+    font-size: 0.9rem;
+    min-height: 1.3em;
+    color: var(--muted);
+}
+
+.admin-status.success {
+    color: var(--success);
+    font-weight: 600;
+}
+
+.admin-status.error {
+    color: var(--needle);
+    font-weight: 600;
+}
+
+/* --- תצוגה מקדימה --- */
+/* הכרטיס בעמוד עצמו הוא פריט ברצועה גוללת ברוחב קבוע; כאן הוא עומד לבדו
+   וצריך למלא את הרוחב הזמין. */
+.admin-preview .rogem-card {
+    width: 100%;
+    flex: none;
+}
+
+/* --- רשימת הרעיונות --- */
+.admin-count {
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: var(--muted);
+}
+
+.admin-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.admin-list-empty {
+    color: var(--muted);
+    margin: 0;
+}
+
+.admin-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--surface-soft);
+}
+
+.admin-item-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-item-date {
+    margin: 0 0 3px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.admin-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 8px;
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-line);
+    color: var(--warn);
+}
+
+.admin-item-title {
+    margin: 0 0 4px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.admin-item-excerpt {
+    margin: 0;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+.admin-item-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.admin-icon-button {
+    width: 34px;
+    height: 34px;
+    background: var(--chip);
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+.admin-icon-button .icon {
+    width: 17px;
+    height: 17px;
+}
+
+.admin-icon-button:hover {
+    background: var(--chip-hover);
+    box-shadow: none;
+}
+
+.admin-icon-button.danger:hover {
+    background: var(--warn-bg);
+    color: var(--needle);
+}
+
+@media (max-width: 600px) {
+    .admin-item {
+        padding: 12px 14px;
+    }
+
+    .admin-actions .admin-button {
+        flex: 1;
+    }
+}

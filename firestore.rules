@@ -1,0 +1,59 @@
+rules_version = '2';
+
+// כללי האבטחה של רוג'ום.
+//
+// זהו המנגנון היחיד שבאמת מגן על הכתיבה: הוא נאכף בצד השרת של Google,
+// ולכן אי אפשר לעקוף אותו בעריכת JavaScript בדפדפן או בקריאה ישירה ל-API.
+// הסתרת דף הניהול (admin.html ללא קישור מהתפריט) אינה אבטחה - היא רק
+// מונעת מבקרים מזדמנים להיתקל בו.
+//
+// הוספת כותב בעתיד: מוסיפים מייל ל-EDITORS ומריצים
+//   npx firebase-tools deploy --only firestore:rules
+// הרשימה מכוונת להיות בקוד ולא באוסף שאפשר לכתוב אליו: מתן הרשאה הוא
+// החלטה מודעת שעוברת ב-git, ולא רשומה שאפשר להוסיף דרך הממשק.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function editors() {
+      return ['elsegev@gmail.com'];
+    }
+
+    // email_verified הכרחי: בלעדיו ספק זהות שמאפשר מייל לא מאומת היה יכול
+    // להנפיק אסימון עם כתובת שאינה שלו ולעבור את הבדיקה.
+    function isEditor() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in editors();
+    }
+
+    // ולידציה של הרשומה עצמה. בלעדיה, כותב מורשה (או קוד באג) היה יכול
+    // לשמור מסמך שיפיל את הרינדור בעמוד הציבורי, למשל בלי title או עם
+    // גוף באורך אינסופי.
+    function isValidIdea(data) {
+      return data.title is string
+        && data.title.size() > 0 && data.title.size() <= 40
+        && data.body is string
+        && data.body.size() > 0 && data.body.size() <= 600
+        && data.date is string
+        && data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && (data.hebrewDate == null || data.hebrewDate is string);
+    }
+
+    match /ideas/{ideaId} {
+      // האוסף ציבורי: העמוד קורא אותו בלי התחברות, בדיוק כפי שקרא קודם
+      // את rogem.json הציבורי.
+      allow read: if true;
+
+      allow create: if isEditor() && isValidIdea(request.resource.data);
+      allow update: if isEditor() && isValidIdea(request.resource.data);
+      allow delete: if isEditor();
+    }
+
+    // כל שאר האוספים חסומים לחלוטין, כדי שאוסף חדש שייווצר בטעות לא
+    // ייוותר פתוח.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

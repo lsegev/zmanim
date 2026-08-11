@@ -5,9 +5,12 @@
   "description": "מיל — יישומון זמנים הלכתיים",
   "type": "module",
   "scripts": {
-    "icons": "node tools/make-icon.mjs --variant sundial --out ."
+    "icons": "node tools/make-icon.mjs --variant sundial --out .",
+    "vendor:firebase": "esbuild tools/build/firebase-entry.js --bundle --format=esm --minify --target=es2020 --outfile=vendor/firebase.js"
   },
   "devDependencies": {
+    "esbuild": "^0.28.2",
+    "firebase": "^12.17.1",
     "sharp": "^0.35.3"
   }
 }

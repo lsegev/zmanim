@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<!--
+  דף הניהול של רוג'ום.
+
+  אין אליו קישור מהתפריט, אבל זו אינה אבטחה - כל אחד יכול לנחש את הכתובת.
+  מה שמגן בפועל הוא firestore.rules, שנאכפים בשרת של Google: מבקר לא מורשה
+  יראה כאן מסך התחברות, וכל ניסיון כתיבה יידחה גם אם ישנה את הקוד בדפדפן.
+-->
+<html lang="he" dir="rtl" class="day">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!--
+    ה-CSP כאן רחבה מזו של שאר הדפים, כי דף הניהול טוען את ה-SDK של Firebase
+    ומריץ התחברות Google:
+      connect-src  - firestore + שירותי הזהות של Google
+      frame-src    - חלון ההתחברות של Google יושב ב-iframe
+      script-src   - 'self' בלבד: ה-SDK ארוז מקומית ב-vendor/firebase.js
+                     ואינו נטען מ-CDN חיצוני.
+    הדף אינו נפרס לשום מקום אחר ואינו נטען ע"י מבקרים רגילים.
+  -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self';
+    style-src 'self';
+    img-src 'self' data: https://*.googleusercontent.com;
+    font-src 'self';
+    connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com;
+    frame-src https://mil-time.firebaseapp.com https://accounts.google.com;
+    base-uri 'none';
+    form-action 'none';
+    object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
+  <!-- דף ניהול פנימי: אין סיבה שיופיע בתוצאות חיפוש. -->
+  <meta name="robots" content="noindex, nofollow">
+
+  <meta name="theme-color" content="#cdeefd" id="theme-color-meta">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+
+  <title>ניהול רוג'ום</title>
+
+  <link rel="stylesheet" href="style.css">
+  <script src="app-init.js"></script>
+</head>
+<body>
+  <svg class="icon-sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-rogem" viewBox="0 0 24 24">
+      <path d="M4.4 20.6c-.9-.7-.6-2.6.6-3.2 1.7-.9 12.3-.9 14 0 1.2.6 1.5 2.5.6 3.2-1.9 1-13.3 1-15.2 0Z" />
+      <path d="M7.4 16.2c-.9-.7-.5-2.7.7-3.3 1.4-.7 7.4-.7 8.7 0 1.2.6 1.6 2.6.7 3.3-1.5.9-8.6.9-10.1 0Z" />
+      <path d="M9.7 11.8c-.8-.7-.4-2.5.7-3 1.1-.5 3.3-.5 4.3 0 1.1.5 1.5 2.3.7 3-1.1.8-4.6.8-5.7 0Z" />
+    </symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24">
+      <path d="M4 20h4.2L19.4 8.8a2 2 0 0 0 0-2.8l-1.4-1.4a2 2 0 0 0-2.8 0L4 15.8Z" />
+      <path d="M14.6 5.6 18.4 9.4" />
+    </symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24">
+      <path d="M4.6 6.6h14.8M9.4 6.6V4.8h5.2v1.8" />
+      <path d="M6.6 6.6 7.5 20h9l.9-13.4" />
+      <path d="M10.4 10.2v6M13.6 10.2v6" />
+    </symbol>
+  </svg>
+
+  <main class="page admin-page">
+    <header class="page-header">
+      <svg class="admin-logo" aria-hidden="true"><use href="#i-rogem" /></svg>
+      <h1>ניהול רוג&rsquo;ום</h1>
+      <p class="page-lede" id="admin-lede">אבני דרך — הוספה ועריכה של רעיונות.</p>
+    </header>
+
+    <!-- מצב 1: טוען / לא מחובר -->
+    <section class="prose admin-gate" id="gate">
+      <p class="admin-gate-status" id="gate-status">בודק התחברות…</p>
+      <div class="admin-gate-actions" id="gate-actions" hidden>
+        <button type="button" class="admin-button primary" id="sign-in">התחברות עם Google</button>
+      </div>
+    </section>
+
+    <!-- מצב 2: מחובר אך לא מורשה -->
+    <section class="prose admin-denied" id="denied" hidden>
+      <h2>אין הרשאת עריכה</h2>
+      <p id="denied-text"></p>
+      <p class="hint">
+        אם זו טעות, יש להוסיף את הכתובת לרשימה ב-<code>firestore.rules</code>
+        ולפרוס מחדש את הכללים.
+      </p>
+      <button type="button" class="admin-button" id="sign-out-denied">התנתקות</button>
+    </section>
+
+    <!-- מצב 3: מחובר ומורשה -->
+    <div class="admin-app" id="app" hidden>
+      <div class="admin-user">
+        <span id="user-email"></span>
+        <button type="button" class="admin-button subtle" id="sign-out">התנתקות</button>
+      </div>
+
+      <section class="prose admin-form">
+        <h2 id="form-heading">רעיון חדש</h2>
+
+        <div class="field">
+          <label for="title">שם הרעיון</label>
+          <input type="text" id="title" maxlength="80" autocomplete="off"
+                 placeholder="למשל: שתי אוזניים, פה אחד">
+          <p class="counter" id="title-counter">0 / 40</p>
+        </div>
+
+        <div class="field">
+          <label for="date">תאריך</label>
+          <input type="date" id="date">
+          <p class="schedule" id="schedule"></p>
+        </div>
+
+        <div class="field">
+          <label for="body">גוף הרעיון</label>
+          <textarea id="body" rows="8"
+                    placeholder="שורה ריקה כפולה מפרידה בין פסקאות.&#10;&#10;טקסט בין גרשיים יעוצב כציטוט."></textarea>
+          <p class="counter" id="body-counter">0 / 600</p>
+        </div>
+
+        <div class="admin-actions">
+          <button type="button" class="admin-button primary" id="save">הוספת הרעיון</button>
+          <button type="button" class="admin-button" id="cancel-edit" hidden>ביטול העריכה</button>
+        </div>
+
+        <!-- aria-live: הודעת הצלחה או שגיאה צריכה להיות מוכרזת גם למי
+             שמשתמש בקורא מסך ואינו רואה את הצבע. -->
+        <p class="admin-status" id="status" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="prose admin-preview">
+        <h2>תצוגה מקדימה</h2>
+        <div id="preview"></div>
+      </section>
+
+      <section class="prose admin-list-section">
+        <h2>כל הרעיונות <span class="admin-count" id="count"></span></h2>
+        <p class="admin-list-empty" id="list-empty" hidden>עוד לא נוספו רעיונות.</p>
+        <ul class="admin-list" id="list"></ul>
+      </section>
+    </div>
+
+    <p class="back-home">
+      <a href="rogem.html">לעמוד רוג&rsquo;ום</a>
+    </p>
+  </main>
+
+  <script src="hebrew-date.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="rogem.js"></script>
+  <script type="module" src="admin.js"></script>
+</body>
+</html>

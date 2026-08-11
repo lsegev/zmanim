@@ -1,10 +1,13 @@
 'use strict';
 
 // עמוד רוג'ום: אוסף של רעיונות תורניים קצרים, כרטיס לכל רעיון.
-// הנתונים מגיעים מ-rogem.json שנפרס יחד עם היישומון - אין שרת ואין בסיס
-// נתונים, בדיוק כמו שאר האפליקציה.
+//
+// הנתונים מגיעים מ-Firestore דרך ה-REST API (ראה firebase-config.js), כדי
+// שרעיון חדש שנכתב בדף הניהול יופיע מיד ובלי פריסה מחדש. אחרי כל טעינה
+// מוצלחת נשמר עותק ב-localStorage, וכך העמוד ממשיך לעבוד גם בלי רשת.
 
 const READ_KEY = 'rogem:read';
+const CACHE_KEY = 'rogem:cache';
 const MAX_BODY = 600;
 const MAX_TITLE = 40;
 
@@ -104,21 +107,62 @@ function isValidIdea(idea) {
     && parseIdeaDate(idea.date) !== null;
 }
 
-function loadIdeas() {
-  // cache: 'no-store' מבטיח שרעיון חדש יופיע מיד: ה-Service Worker מגיש
-  // נכסים לפי stale-while-revalidate, ובלי זה הביקור הראשון אחרי פרסום היה
-  // מציג את הגרסה הישנה של הקובץ. אם אין רשת - נופלים למטמון, כך שהדף
-  // ממשיך לעבוד גם offline.
-  return fetch('rogem.json', { cache: 'no-store' })
-    .catch(() => fetch('rogem.json'))
+// הרעיונות מגיעים מ-Firestore דרך ה-REST API, בלי SDK: האוסף פתוח לקריאה,
+// ולכן די ב-fetch רגיל. חבילת ה-SDK שוקלת כחצי מגהבייט - יותר מכל שאר
+// האפליקציה יחד - וזה מחיר לא סביר לעמוד שרק מציג כמה פסקאות. דף הניהול,
+// שבו באמת צריך התחברות, הוא היחיד שטוען אותה.
+//
+// cache: 'no-store' מבטיח שרעיון חדש יופיע מיד ולא ייתפס במטמון ביניים.
+function fetchIdeasFromFirestore() {
+  return fetch(IDEAS_REST_URL, { cache: 'no-store' })
     .then(response => {
       if (!response.ok) throw new Error('HTTP ' + response.status);
       return response.json();
     })
     .then(data => {
-      const all = (data && Array.isArray(data.ideas)) ? data.ideas : [];
-      const today = startOfToday();
+      // אוסף ריק מוחזר בלי המפתח documents כלל.
+      const docs = (data && Array.isArray(data.documents)) ? data.documents : [];
+      return docs
+        .map(doc => ideaFromFields(doc.name.split('/').pop(), doc.fields))
+        .filter(idea => idea !== null);
+    });
+}
 
+// המטמון המקומי הוא מה שמאפשר לעמוד לעבוד גם בלי רשת, אחרי ביקור אחד
+// מוצלח. הוא נשמר אחרי כל טעינה מוצלחת ונקרא רק כשהרשת נכשלה.
+function cacheIdeas(ideas) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(ideas));
+  } catch (error) {
+    // אין מקום או שהאחסון חסום - לא נורא, פשוט לא יהיה גיבוי אופליין.
+  }
+}
+
+function readCachedIdeas() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function loadIdeas() {
+  return fetchIdeasFromFirestore()
+    .then(ideas => {
+      cacheIdeas(ideas);
+      return ideas;
+    })
+    .catch(error => {
+      // בלי רשת נופלים למטמון. אם גם הוא ריק - אין מה להציג, והשגיאה
+      // ממשיכה הלאה כדי שתוצג הודעה ולא מסך ריק.
+      const cached = readCachedIdeas();
+      if (cached.length === 0) throw error;
+      return cached;
+    })
+    .then(all => {
+      const today = startOfToday();
       return all
         .filter(isValidIdea)
         .filter(idea => isPublished(idea, today))
@@ -397,9 +441,9 @@ function initRogem() {
     });
 }
 
-// העורך המקומי (tools/rogem-editor.html) טוען את הקובץ הזה כדי להשתמש
-// ב-buildCard - כך התצוגה המקדימה בעורך היא הכרטיס האמיתי ולא חיקוי שיוכל
-// להיסחף. שם אין תפריט ואין #rogem-viewport, ולכן האתחול מדלג.
+// דף הניהול (admin.html) טוען את הקובץ הזה כדי להשתמש ב-buildCard ובעזרי
+// התאריך - כך התצוגה המקדימה שם היא הכרטיס האמיתי ולא חיקוי שיוכל להיסחף.
+// באותו דף אין תפריט ואין #rogem-viewport, ולכן האתחול מדלג.
 if (document.getElementById('rogem-viewport')) {
   initMenu();
   initRogem();
