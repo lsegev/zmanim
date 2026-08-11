@@ -35,8 +35,8 @@
         "headers": [
           {
             "key": "Content-Security-Policy",
-            "//": "form-action מאפשר את שרתי הזהות של Google: זרימת ההתחברות מסתיימת בשליחת טופס חזרה מ-accounts.google.com אל דף ה-handler, ו-'none' חסם אותה - זו הייתה הסיבה ל-auth/internal-error אחרי שהחלון כבר נפתח.",
-            "value": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://*.googleusercontent.com; font-src 'self'; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com; frame-src https://mil-time.firebaseapp.com https://accounts.google.com; base-uri 'none'; form-action 'self' https://accounts.google.com https://mil-time.firebaseapp.com; object-src 'none'; frame-ancestors 'none'"
+            "//": "script-src מתיר את apis.google.com: ה-SDK טוען משם את gapi בזמן ההתחברות כדי לבנות את ה-iframe, וזו טעינה דינמית שאריזה מקומית אינה יכולה למנוע. form-action מתיר את שרתי הזהות, כי הזרימה מסתיימת בשליחת טופס חזרה. ההרחבות האלה חלות על דף הניהול בלבד - שאר הדפים נשארים עם script-src 'self' ו-form-action 'none'.",
+            "value": "default-src 'self'; script-src 'self' https://apis.google.com; style-src 'self'; img-src 'self' data: https://*.googleusercontent.com; font-src 'self'; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://apis.google.com; frame-src https://mil-time.firebaseapp.com https://accounts.google.com https://apis.google.com; base-uri 'none'; form-action 'self' https://accounts.google.com https://mil-time.firebaseapp.com; object-src 'none'; frame-ancestors 'none'"
           },
           { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
           { "key": "X-Content-Type-Options", "value": "nosniff" },

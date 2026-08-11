@@ -12,22 +12,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!--
-    ה-CSP כאן רחבה מזו של שאר הדפים, כי דף הניהול טוען את ה-SDK של Firebase
-    ומריץ התחברות Google:
+    ה-CSP כאן רחבה מזו של שאר הדפים, כי דף הניהול מריץ התחברות Google:
+      script-src   - מתיר את apis.google.com. ה-SDK ארוז אמנם מקומית
+                     ב-vendor/firebase.js, אך בזמן ההתחברות הוא טוען משם את
+                     gapi כדי לבנות את ה-iframe - טעינה דינמית שאריזה מקומית
+                     אינה יכולה למנוע.
       connect-src  - firestore + שירותי הזהות של Google
-      frame-src    - חלון ההתחברות של Google יושב ב-iframe
-      script-src   - 'self' בלבד: ה-SDK ארוז מקומית ב-vendor/firebase.js
-                     ואינו נטען מ-CDN חיצוני.
-    הדף אינו נפרס לשום מקום אחר ואינו נטען ע"י מבקרים רגילים.
+      frame-src    - חלון ההתחברות וה-iframe של gapi
+      form-action  - הזרימה מסתיימת בשליחת טופס חזרה משרתי Google
+
+    ההרחבות חלות על הדף הזה בלבד. שאר הדפים, ובכללם דף הזמנים ועמוד רוג'ום,
+    נשארים עם script-src 'self' ו-form-action 'none'.
   -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self';
+    script-src 'self' https://apis.google.com;
     style-src 'self';
     img-src 'self' data: https://*.googleusercontent.com;
     font-src 'self';
-    connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com;
-    frame-src https://mil-time.firebaseapp.com https://accounts.google.com;
+    connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://apis.google.com;
+    frame-src https://mil-time.firebaseapp.com https://accounts.google.com https://apis.google.com;
     base-uri 'none';
     form-action 'self' https://accounts.google.com https://mil-time.firebaseapp.com;
     object-src 'none'">
