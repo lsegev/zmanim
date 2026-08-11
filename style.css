@@ -1294,11 +1294,19 @@ body {
 }
 
 /* ציטוט בתוך גוף הטקסט. הדפדפן מוסיף גרשיים משלו ל-<q>, ולכן הם מבוטלים
-   כאן - הגרשיים כבר קיימים בטקסט שהמחבר כתב. */
+   כאן - הגרשיים כבר קיימים בטקסט שהמחבר כתב.
+   ההבחנה נעשית בצבע ובמשקל ולא בנטוי בלבד: לגופנים עבריים אין נטוי אמיתי,
+   והדפדפן רק מטה אותם מלאכותית - הבדל שכמעט אינו נראה בקריאה. */
 .rogem-body q {
     quotes: none;
-    font-style: italic;
     color: var(--accent);
+    font-weight: 500;
+}
+
+/* הדגשה בתוך גוף הטקסט (*טקסט* בעורך). */
+.rogem-body strong {
+    font-weight: 700;
+    color: var(--text);
 }
 
 /* ltr כמו ציר הגלילה: הכפתור השמאלי מוביל לחדש יותר והימני לישן יותר,
@@ -1510,6 +1518,9 @@ body {
 .field input,
 .field textarea {
     width: 100%;
+    /* max-width נוסף ל-width: ב-iOS שדה תאריך מתעלם מ-width ומתרחב לפי
+       התוכן הפנימי שלו, וגולש אל מחוץ לכרטיס. */
+    max-width: 100%;
     box-sizing: border-box;
     font-family: var(--app-font);
     font-size: 1rem;
@@ -1519,6 +1530,28 @@ body {
     background: var(--surface-strong);
     color: var(--text);
     direction: rtl;
+}
+
+/* שדה התאריך ב-iOS מקבל עיצוב מובנה משלו: הוא מתעלם מ-direction, מיישר
+   את עצמו למרכז וגולש שמאלה מחוץ לכרטיס. איפוס ה-appearance מחזיר אותו
+   להתנהגות של שדה רגיל, ו-ltr מיושר לימין נותן את מה שבאמת רוצים -
+   התאריך נקרא משמאל לימין, אבל השדה יושב בצד ימין כמו שאר הטופס. */
+.field input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+    direction: ltr;
+    text-align: right;
+    min-height: 44px;
+}
+
+/* אייקון לוח השנה של Safari, שאחרת נדחק אל מחוץ לשדה */
+.field input[type="date"]::-webkit-calendar-picker-indicator {
+    margin: 0;
+    margin-inline-start: auto;
+}
+
+.field input[type="date"]::-webkit-date-and-time-value {
+    text-align: right;
 }
 
 .field textarea {
@@ -1538,6 +1571,24 @@ body {
     font-size: 0.82rem;
     color: var(--muted);
     font-variant-numeric: tabular-nums;
+}
+
+.hint {
+    margin: 6px 0 0;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--muted);
+}
+
+.hint code {
+    font-family: ui-monospace, monospace;
+    font-size: 0.95em;
+    padding: 1px 5px;
+    border-radius: 5px;
+    background: var(--chip);
+    /* קטע קוד נקרא משמאל לימין גם בתוך משפט עברי */
+    direction: ltr;
+    display: inline-block;
 }
 
 .counter.over {

@@ -173,25 +173,39 @@ function loadIdeas() {
 
 // ---------- רינדור ----------
 
-// הטקסט מגיע מקובץ שהבעלים כותב, אך הוא מוזרק כטקסט בלבד (createTextNode
+// הטקסט מגיע ממסד הנתונים, אך הוא מוזרק כטקסט בלבד (createTextNode
 // ו-textContent) ולעולם לא כ-HTML, כך שגם תו כמו < אינו יכול להפוך לתגית.
 //
-// גרשיים עבריים בגוף הטקסט הופכים ל-<q> ומקבלים עיצוב נבדל, כדי שאפשר
-// יהיה לשלב ציטוט בתוך פסקה בלי מבנה נוסף בקובץ.
+// שני סימונים נתמכים בתוך פסקה:
+//   "ציטוט"   - גרשיים (ישרים או מסולסלים) הופכים ל-<q>
+//   *הדגשה*   - כוכביות הופכות ל-<strong>
+//
+// כוכבית בודדת שאינה עוטפת טקסט נשארת כפי שהיא, כדי שמי שכותב כוכבית
+// רגילה בטקסט לא יקבל התנהגות מפתיעה.
+const INLINE_PATTERN = /\*([^*\n]+)\*|“([^”]+)”|"([^"]+)"/g;
+
 function renderParagraph(text) {
   const p = document.createElement('p');
-  const pattern = /“([^”]+)”|"([^"]+)"/g;
+  INLINE_PATTERN.lastIndex = 0;
   let lastIndex = 0;
   let match;
 
-  while ((match = pattern.exec(text)) !== null) {
+  while ((match = INLINE_PATTERN.exec(text)) !== null) {
     if (match.index > lastIndex) {
       p.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
     }
-    const quote = document.createElement('q');
-    quote.textContent = match[1] || match[2];
-    p.appendChild(quote);
-    lastIndex = pattern.lastIndex;
+
+    if (match[1] !== undefined) {
+      const strong = document.createElement('strong');
+      strong.textContent = match[1];
+      p.appendChild(strong);
+    } else {
+      const quote = document.createElement('q');
+      quote.textContent = match[2] !== undefined ? match[2] : match[3];
+      p.appendChild(quote);
+    }
+
+    lastIndex = INLINE_PATTERN.lastIndex;
   }
 
   if (lastIndex < text.length) {
