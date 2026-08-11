@@ -182,34 +182,55 @@ function loadIdeas() {
 //
 // כוכבית בודדת שאינה עוטפת טקסט נשארת כפי שהיא, כדי שמי שכותב כוכבית
 // רגילה בטקסט לא יקבל התנהגות מפתיעה.
-const INLINE_PATTERN = /\*([^*\n]+)\*|“([^”]+)”|"([^"]+)"/g;
+const QUOTE_PATTERN = /“([^”]+)”|"([^"]+)"/g;
+const BOLD_PATTERN = /\*([^*\n]+)\*/g;
 
-function renderParagraph(text) {
-  const p = document.createElement('p');
-  INLINE_PATTERN.lastIndex = 0;
+// הדגשה בלבד, ללא ציטוטים. משמש גם לתוכן שבתוך <q>, ולכן הוא מופרד:
+// ציטוט בתוך ציטוט אינו נתמך ואינו נחוץ, אבל הדגשה בתוך ציטוט כן - פסוק
+// שמצטטים בדרך כלל רוצים להדגיש בתוכו מילה או שתיים.
+function appendWithBold(parent, text) {
+  BOLD_PATTERN.lastIndex = 0;
   let lastIndex = 0;
   let match;
 
-  while ((match = INLINE_PATTERN.exec(text)) !== null) {
+  while ((match = BOLD_PATTERN.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      p.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+      parent.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
     }
-
-    if (match[1] !== undefined) {
-      const strong = document.createElement('strong');
-      strong.textContent = match[1];
-      p.appendChild(strong);
-    } else {
-      const quote = document.createElement('q');
-      quote.textContent = match[2] !== undefined ? match[2] : match[3];
-      p.appendChild(quote);
-    }
-
-    lastIndex = INLINE_PATTERN.lastIndex;
+    const strong = document.createElement('strong');
+    strong.textContent = match[1];
+    parent.appendChild(strong);
+    lastIndex = BOLD_PATTERN.lastIndex;
   }
 
   if (lastIndex < text.length) {
-    p.appendChild(document.createTextNode(text.slice(lastIndex)));
+    parent.appendChild(document.createTextNode(text.slice(lastIndex)));
+  }
+}
+
+function renderParagraph(text) {
+  const p = document.createElement('p');
+  QUOTE_PATTERN.lastIndex = 0;
+  let lastIndex = 0;
+  let match;
+
+  // קודם מפרקים לפי ציטוטים, ואז מחפשים הדגשה בכל קטע בנפרד - גם בתוך
+  // הציטוט וגם מחוצה לו. סריקה שטוחה אחת הייתה מחמיצה הדגשה בתוך ציטוט,
+  // כי תוכן ה-<q> נכתב כטקסט ולא נסרק שוב.
+  while ((match = QUOTE_PATTERN.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      appendWithBold(p, text.slice(lastIndex, match.index));
+    }
+
+    const quote = document.createElement('q');
+    appendWithBold(quote, match[1] !== undefined ? match[1] : match[2]);
+    p.appendChild(quote);
+
+    lastIndex = QUOTE_PATTERN.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    appendWithBold(p, text.slice(lastIndex));
   }
   return p;
 }
