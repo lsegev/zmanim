@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<!-- מחלקת הערכה (day/night) יושבת על <html> ולא על <body>, כדי ש-app-init.js
+     יוכל לקבוע אותה בתוך ה-head - לפני הצביעה הראשונה ובלי הבזק לבן בלילה. -->
+<html lang="he" dir="rtl" class="day">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!--
+    Content-Security-Policy: מוגדרת כ-header ב-firebase.json, וכאן כגיבוי
+    לפריסה סטטית ללא שליטה ב-headers (כגון GitHub Pages). שתי ההגדרות
+    חייבות להישאר מסונכרנות - ראה README.
+  -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self';
+    style-src 'self';
+    img-src 'self' data:;
+    font-src 'self';
+    manifest-src 'self';
+    connect-src 'self' https://nominatim.openstreetmap.org https://api.bigdatacloud.net https://ipapi.co;
+    base-uri 'none';
+    form-action 'none';
+    object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
+  <meta name="theme-color" content="#cdeefd" id="theme-color-meta">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="מיל">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+  <title>רוג'ום — אבני דרך</title>
+  <meta name="description" content="רוג'ום: אוסף של רעיונות תורניים קצרים, אבן אחר אבן לאורך הדרך.">
+
+  <meta property="og:title" content="רוג'ום — אבני דרך" />
+  <meta property="og:description" content="אוסף של רעיונות תורניים קצרים, אבן אחר אבן לאורך הדרך." />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="he_IL" />
+  <meta property="og:site_name" content="מיל" />
+
+  <meta http-equiv="Content-Language" content="he">
+  <link rel="canonical" href="https://mil-time.web.app/rogem.html">
+
+  <link rel="stylesheet" href="style.css">
+  <script src="app-init.js"></script>
+</head>
+<body>
+  <!-- רק האייקונים שהעמוד הזה באמת משתמש בהם. -->
+  <svg class="icon-sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-home" viewBox="0 0 24 24">
+      <path d="M3.4 10.6 12 3.4l8.6 7.2" />
+      <path d="M5.8 9.1v11.5h12.4V9.1" />
+    </symbol>
+    <symbol id="i-candle" viewBox="0 0 24 24">
+      <rect x="9.1" y="10.6" width="5.8" height="10" rx="1.4" />
+      <path d="M12 10.6V8.9" />
+      <path d="M12 8.9c1.6 0 2.7-1.1 2.7-2.6C14.7 4.6 12 2.4 12 2.4S9.3 4.6 9.3 6.3c0 1.5 1.1 2.6 2.7 2.6Z" />
+    </symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24">
+      <rect x="3.4" y="5" width="17.2" height="15.8" rx="2.6" />
+      <path d="M3.4 10h17.2M8.4 2.9v4.2M15.6 2.9v4.2" />
+    </symbol>
+    <!-- רוג'ום: ערימת אבנים שהולכי דרך מקימים. שלוש אבנים בלבד, בקווי מתאר
+         לא-סימטריים - ארבע אבנים או יותר נמרחות לצורה אחת בגודל 22px. -->
+    <symbol id="i-rogem" viewBox="0 0 24 24">
+      <path d="M4.4 20.6c-.9-.7-.6-2.6.6-3.2 1.7-.9 12.3-.9 14 0 1.2.6 1.5 2.5.6 3.2-1.9 1-13.3 1-15.2 0Z" />
+      <path d="M7.4 16.2c-.9-.7-.5-2.7.7-3.3 1.4-.7 7.4-.7 8.7 0 1.2.6 1.6 2.6.7 3.3-1.5.9-8.6.9-10.1 0Z" />
+      <path d="M9.7 11.8c-.8-.7-.4-2.5.7-3 1.1-.5 3.3-.5 4.3 0 1.1.5 1.5 2.3.7 3-1.1.8-4.6.8-5.7 0Z" />
+    </symbol>
+    <symbol id="i-info" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.6" />
+      <path d="M12 11.2v5.2M12 7.8h.01" />
+    </symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24">
+      <path d="M3.6 7h16.8M3.6 12h16.8M3.6 17h16.8" />
+    </symbol>
+    <symbol id="i-close" viewBox="0 0 24 24">
+      <path d="M6.2 6.2 17.8 17.8M17.8 6.2 6.2 17.8" />
+    </symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24">
+      <path d="M14.5 5.5 8 12l6.5 6.5" />
+    </symbol>
+  </svg>
+
+  <div class="top-bar">
+    <button class="icon-button menu-toggle" id="menu-toggle" type="button"
+            aria-label="פתיחת התפריט" aria-expanded="false" aria-controls="side-menu">
+      <svg class="icon" aria-hidden="true"><use href="#i-menu" /></svg>
+    </button>
+  </div>
+
+  <div class="side-menu" id="side-menu" aria-hidden="true">
+    <nav class="menu-content" aria-label="ניווט ראשי">
+      <div class="menu-header">
+        <span class="menu-title">תפריט</span>
+        <button class="icon-button menu-close" type="button" aria-label="סגירת התפריט">
+          <svg class="icon" aria-hidden="true"><use href="#i-close" /></svg>
+        </button>
+      </div>
+      <ul class="menu-list">
+        <li class="menu-item">
+          <a href="./">
+            <svg class="menu-icon" aria-hidden="true"><use href="#i-home" /></svg>
+            <span class="menu-text">דף הבית</span>
+          </a>
+        </li>
+        <!-- דפים שטרם נבנו: ללא href, ולכן גם לא ניתנים למיקוד מקלדת ולא מנווטים לשום מקום -->
+        <li class="menu-item soon">
+          <a aria-disabled="true">
+            <svg class="menu-icon" aria-hidden="true"><use href="#i-candle" /></svg>
+            <span class="menu-text">זמני שבת</span>
+            <span class="menu-badge">בקרוב</span>
+          </a>
+        </li>
+        <li class="menu-item soon">
+          <a aria-disabled="true">
+            <svg class="menu-icon" aria-hidden="true"><use href="#i-calendar" /></svg>
+            <span class="menu-text">תאריכים חשובים השבוע</span>
+            <span class="menu-badge">בקרוב</span>
+          </a>
+        </li>
+        <li class="menu-item active">
+          <a href="rogem.html" aria-current="page">
+            <svg class="menu-icon" aria-hidden="true"><use href="#i-rogem" /></svg>
+            <span class="menu-text">רוג'ום<span class="menu-subtext">אבני דרך</span></span>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a href="about.html">
+            <svg class="menu-icon" aria-hidden="true"><use href="#i-info" /></svg>
+            <span class="menu-text">אודות</span>
+          </a>
+        </li>
+      </ul>
+      <p class="menu-note">
+        המיקום שלך משמש לחישוב זמני היום בלבד ונשלח לשירותי זיהוי מיקום חיצוניים
+        בדיוק מעוגל של כ-100 מטר. הוא אינו נשמר בשרת כלשהו.
+        <a href="about.html">עוד על הפרטיות</a>
+      </p>
+    </nav>
+  </div>
+  <div class="overlay"></div>
+
+  <main class="page rogem-page">
+    <header class="page-header">
+      <h1>רוג&rsquo;ום</h1>
+      <p class="page-lede">אבני דרך — רעיון קטן, אחד בכל פעם.</p>
+    </header>
+
+    <!-- מצב טעינה/שגיאה/ריק. מוחלף בכרטיסים ברגע שהקובץ נטען. -->
+    <p class="rogem-status" id="rogem-status">טוען…</p>
+
+    <!-- aria-live מכריז על החלפת כרטיס לקורא מסך, שאחרת לא היה מקבל
+         שום חיווי על כך שהתוכן התחלף בגלילה. -->
+    <div class="rogem-viewport" id="rogem-viewport" hidden
+         role="region" aria-label="רעיונות" aria-live="polite" tabindex="0">
+      <div class="rogem-track" id="rogem-track"></div>
+    </div>
+
+    <div class="rogem-controls" id="rogem-controls" hidden>
+      <!-- ב-RTL הכרטיסים מסודרים מהחדש לישן משמאל לימין, ולכן החץ שמצביע
+           ימינה מוביל לרעיון הישן יותר (הבא ברשימה). -->
+      <button class="icon-button rogem-nav" id="rogem-prev" type="button" aria-label="הרעיון החדש יותר">
+        <svg class="icon rogem-chevron-next" aria-hidden="true"><use href="#i-chevron" /></svg>
+      </button>
+      <div class="rogem-dots" id="rogem-dots"></div>
+      <button class="icon-button rogem-nav" id="rogem-next" type="button" aria-label="הרעיון הישן יותר">
+        <svg class="icon" aria-hidden="true"><use href="#i-chevron" /></svg>
+      </button>
+    </div>
+
+    <p class="rogem-allread" id="rogem-allread" hidden>קראת את כל הרעיונות</p>
+
+    <p class="back-home">
+      <a href="./">חזרה לזמנים</a>
+    </p>
+  </main>
+
+  <script src="menu.js"></script>
+  <script src="hebrew-date.js"></script>
+  <script src="rogem.js"></script>
+</body>
+</html>

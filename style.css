@@ -1182,3 +1182,207 @@ body {
         padding-top: 64px;
     }
 }
+
+/* ============================================================
+   רוג'ום - אבני דרך
+   ------------------------------------------------------------
+   אוסף של רעיונות קצרים, כרטיס לכל רעיון, שגוללים ביניהם בהחלקה.
+   הניווט נשען על CSS Scroll Snap ולא על מאזיני מגע ידניים: כך
+   מתקבלת תנועה טבעית של המערכת (אינרציה, גלגלת, מקלדת) בלי קוד.
+   ============================================================ */
+.rogem-page {
+    max-width: 640px;
+}
+
+.rogem-status {
+    margin: 24px 0;
+    text-align: center;
+    color: var(--muted);
+    font-size: 1.05rem;
+    line-height: 1.6;
+}
+
+/* המכל הגולל. overflow-x מסתיר את סרגל הגלילה עצמו - הנקודות והחצים
+   הם החיווי, וסרגל אופקי היה מפריע לעיצוב הכרטיס.
+   המכל עצמו אינו flex: הרצועה שבתוכו היא ה-flex, ואילו המכל היה flex
+   הרצועה הייתה מתכווצת לרוחב המסך במקום להתארך לכל הכרטיסים. */
+.rogem-viewport {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    /* גלילה אופקית בלבד: בלי זה החלקה אלכסונית בנייד "גוררת" את הדף. */
+    overscroll-behavior-x: contain;
+    border-radius: var(--radius-lg);
+}
+
+.rogem-viewport::-webkit-scrollbar {
+    display: none;
+}
+
+.rogem-viewport:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
+.rogem-track {
+    display: flex;
+    /* width: max-content מונע מהרצועה להתכווץ לרוחב המכל: היא חייבת
+       להתארך לסכום רוחבי הכרטיסים, אחרת אין מה לגלול. */
+    width: max-content;
+}
+
+.rogem-card {
+    /* כל כרטיס תופס בדיוק את רוחב המכל, כך שההצמדה עוצרת עליו במדויק.
+       הרוחב נקבע ב-100% של המכל הגולל (ולא של הרצועה, שרוחבה max-content)
+       דרך יחידת אחוזים מול ה-viewport - ולכן משתמשים כאן ב-100vw מוגבל
+       ברוחב המרבי של העמוד. */
+    flex: 0 0 auto;
+    width: min(100vw - 32px, 640px);
+    box-sizing: border-box;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 28px 24px 32px;
+    text-align: right;
+}
+
+.rogem-date {
+    margin: 0 0 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--accent);
+}
+
+.rogem-title {
+    margin: 0 0 16px;
+    font-size: 1.45rem;
+    font-weight: 700;
+    line-height: 1.3;
+    /* קו מפריד קצר בין הכותרת לגוף, במקום קו רוחב מלא שהיה חוצה את הכרטיס. */
+    padding-bottom: 14px;
+    border-bottom: 2px solid var(--accent-line);
+    display: inline-block;
+}
+
+.rogem-body {
+    /* שורה ארוכה מדי קשה למעקב בקריאה רציפה. */
+    max-width: 60ch;
+}
+
+.rogem-body p {
+    margin: 0 0 14px;
+    font-size: 1.05rem;
+    line-height: 1.75;
+}
+
+.rogem-body p:last-child {
+    margin-bottom: 0;
+}
+
+/* ציטוט בתוך גוף הטקסט. הדפדפן מוסיף גרשיים משלו ל-<q>, ולכן הם מבוטלים
+   כאן - הגרשיים כבר קיימים בטקסט שהמחבר כתב. */
+.rogem-body q {
+    quotes: none;
+    font-style: italic;
+    color: var(--accent);
+}
+
+.rogem-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 4px;
+}
+
+/* display: flex גובר על תכונת hidden, ולכן צריך לבטל אותו במפורש -
+   אחרת החצים היו נראים גם כשאין רעיונות או כשיש רק אחד. */
+.rogem-controls[hidden] {
+    display: none;
+}
+
+.rogem-viewport[hidden] {
+    display: none;
+}
+
+.rogem-nav {
+    width: 40px;
+    height: 40px;
+    background: var(--chip);
+    box-shadow: none;
+}
+
+.rogem-nav:hover:not(:disabled) {
+    background: var(--chip-hover);
+    box-shadow: none;
+}
+
+.rogem-nav:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+/* החץ מצביע שמאלה כברירת מחדל; הכפתור שמוביל לרעיון החדש יותר הופך אותו. */
+.rogem-chevron-next {
+    transform: scaleX(-1);
+}
+
+.rogem-dots {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.rogem-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--chip-hover);
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.rogem-dot.current {
+    background: var(--accent);
+    transform: scale(1.35);
+}
+
+.rogem-allread {
+    margin: 0;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+.rogem-allread[hidden] {
+    display: none;
+}
+
+/* שורת המשנה בפריט התפריט ("אבני דרך" מתחת ל"רוג'ום") */
+.menu-subtext {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--muted);
+    margin-top: 2px;
+}
+
+@media (max-width: 600px) {
+    .rogem-card {
+        padding: 24px 20px 28px;
+    }
+
+    .rogem-title {
+        font-size: 1.3rem;
+    }
+
+    .rogem-body p {
+        font-size: 1rem;
+    }
+}

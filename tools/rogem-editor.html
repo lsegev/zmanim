@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<!--
+  עורך מקומי לרעיונות רוג'ום.
+
+  הקובץ יושב ב-tools/, שמוחרג מהפריסה ב-firebase.json, ולכן הוא לעולם אינו
+  מגיע לאינטרנט. אין בו שרת, אין endpoint ואין טופס שנשלח לאנשהו: הוא מייצר
+  טקסט JSON ומעתיק ללוח, וזהו. מה ששומר שרק הבעלים מוסיף רעיונות הוא הגישה
+  לריפו ולהרשאת ה-deploy - בדיוק כמו שאר האפליקציה.
+
+  פתיחה: לחיצה כפולה על הקובץ, או file:///…/tools/rogem-editor.html
+  הערה: בפתיחה מ-file:// הדפדפן חוסם fetch של rogem.json, ולכן כפתור
+  "העתקת הקובץ המלא" יבקש להדביק את הקובץ הקיים. בהרצה משרת מקומי הוא
+  ייטען לבד.
+-->
+<html lang="he" dir="rtl" class="day">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>עורך רוג'ום</title>
+
+  <!-- הכרטיס בתצוגה המקדימה משתמש בסגנונות האמיתיים של היישומון, כדי
+       שמה שנראה כאן יהיה בדיוק מה שיופיע בעמוד. -->
+  <link rel="stylesheet" href="../style.css">
+
+  <style>
+    body {
+      display: block;
+      padding: 24px;
+      min-height: auto;
+    }
+
+    .editor {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr);
+      gap: 28px;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .editor { grid-template-columns: 1fr; }
+    }
+
+    .editor h1 {
+      grid-column: 1 / -1;
+      margin: 0 0 4px;
+      font-size: 1.6rem;
+    }
+
+    .pane {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      padding: 20px;
+      text-align: right;
+    }
+
+    .pane h2 {
+      margin: 0 0 16px;
+      font-size: 1.1rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .field { margin-bottom: 16px; }
+
+    .field label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .field input,
+    .field textarea {
+      width: 100%;
+      box-sizing: border-box;
+      font-family: var(--app-font);
+      font-size: 1rem;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface-strong);
+      color: var(--text);
+      direction: rtl;
+    }
+
+    .field textarea { min-height: 220px; resize: vertical; line-height: 1.6; }
+
+    .field input:focus,
+    .field textarea:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+
+    .counter { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+    .counter.over { color: #c0392b; font-weight: 700; }
+
+    .hint { font-size: 0.85rem; color: var(--muted); margin: 4px 0 0; line-height: 1.5; }
+
+    .schedule {
+      margin-top: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+
+    .actions button {
+      font-family: var(--app-font);
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--accent-line);
+      background: var(--chip);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .actions button:hover { background: var(--chip-hover); }
+    .actions button:disabled { opacity: 0.5; cursor: default; }
+
+    .status { margin: 12px 0 0; font-size: 0.9rem; color: var(--success); min-height: 1.2em; }
+    .status.error { color: #c0392b; }
+
+    /* התצוגה המקדימה: כרטיס בודד, בלי המכל הגולל של העמוד עצמו. */
+    .preview-stage { display: block; }
+    .preview-stage .rogem-card { width: 100%; flex: none; }
+
+    .output {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 160px;
+      font-family: ui-monospace, monospace;
+      font-size: 0.8rem;
+      direction: ltr;
+      text-align: left;
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface-strong);
+      color: var(--text);
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="editor">
+    <h1>עורך רוג'ום</h1>
+
+    <section class="pane">
+      <h2>הרעיון</h2>
+
+      <div class="field">
+        <label for="title">שם הרעיון</label>
+        <input type="text" id="title" maxlength="80" placeholder="למשל: שתי אוזניים, פה אחד">
+        <p class="counter" id="title-counter">0 / 40</p>
+      </div>
+
+      <div class="field">
+        <label for="date">תאריך</label>
+        <input type="date" id="date">
+        <p class="schedule" id="schedule"></p>
+        <p class="hint">
+          תאריך עתידי = הרעיון נשמר בתור ואינו מוצג עד שיגיע יומו.
+          התאריך העברי מחושב אוטומטית ומוצג בכרטיס.
+        </p>
+      </div>
+
+      <div class="field">
+        <label for="body">גוף הרעיון</label>
+        <textarea id="body" placeholder="שורה ריקה כפולה מפרידה בין פסקאות.&#10;&#10;טקסט בין גרשיים יעוצב כציטוט."></textarea>
+        <p class="counter" id="body-counter">0 / 600</p>
+      </div>
+
+      <div class="actions">
+        <button type="button" id="copy-entry">העתקת הרשומה בלבד</button>
+        <button type="button" id="copy-file">העתקת הקובץ המלא</button>
+        <button type="button" id="load-file">טעינת rogem.json</button>
+      </div>
+      <p class="status" id="status"></p>
+
+      <textarea class="output" id="output" readonly
+                placeholder="הפלט יופיע כאן, ויועתק גם ללוח."></textarea>
+    </section>
+
+    <section class="pane">
+      <h2>כך זה ייראה</h2>
+      <div class="preview-stage" id="preview"></div>
+      <p class="hint" style="margin-top:16px">
+        התצוגה משתמשת בעיצוב ובקוד הרינדור של העמוד עצמו, ולכן היא זהה למה
+        שיוצג באפליקציה. אפשר להחליף בין ערכת יום ללילה בכפתור למטה.
+      </p>
+      <div class="actions">
+        <button type="button" id="toggle-theme">החלפת ערכה</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="../hebrew-date.js"></script>
+  <!-- rogem.js מספק את buildCard. הוא מדלג על האתחול כשאין #rogem-viewport
+       בדף, ולכן טעינתו כאן אינה מפעילה את לוגיקת העמוד. -->
+  <script src="../rogem.js"></script>
+  <script src="rogem-editor.js"></script>
+</body>
+</html>

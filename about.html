@@ -65,9 +65,12 @@
       <rect x="3.4" y="5" width="17.2" height="15.8" rx="2.6" />
       <path d="M3.4 10h17.2M8.4 2.9v4.2M15.6 2.9v4.2" />
     </symbol>
-    <symbol id="i-book" viewBox="0 0 24 24">
-      <path d="M12 6.6C10.3 5.2 8.2 4.6 5 4.6v12.8c3.2 0 5.3.6 7 2 1.7-1.4 3.8-2 7-2V4.6c-3.2 0-5.3.6-7 2Z" />
-      <path d="M12 6.6v12.8" />
+    <!-- רוג'ום: ערימת אבנים שהולכי דרך מקימים. שלוש אבנים בלבד, בקווי מתאר
+         לא-סימטריים - ארבע אבנים או יותר נמרחות לצורה אחת בגודל 22px. -->
+    <symbol id="i-rogem" viewBox="0 0 24 24">
+      <path d="M4.4 20.6c-.9-.7-.6-2.6.6-3.2 1.7-.9 12.3-.9 14 0 1.2.6 1.5 2.5.6 3.2-1.9 1-13.3 1-15.2 0Z" />
+      <path d="M7.4 16.2c-.9-.7-.5-2.7.7-3.3 1.4-.7 7.4-.7 8.7 0 1.2.6 1.6 2.6.7 3.3-1.5.9-8.6.9-10.1 0Z" />
+      <path d="M9.7 11.8c-.8-.7-.4-2.5.7-3 1.1-.5 3.3-.5 4.3 0 1.1.5 1.5 2.3.7 3-1.1.8-4.6.8-5.7 0Z" />
     </symbol>
     <symbol id="i-info" viewBox="0 0 24 24">
       <circle cx="12" cy="12" r="8.6" />
@@ -120,11 +123,10 @@
             <span class="menu-badge">בקרוב</span>
           </a>
         </li>
-        <li class="menu-item soon">
-          <a aria-disabled="true">
-            <svg class="menu-icon" aria-hidden="true"><use href="#i-book" /></svg>
-            <span class="menu-text">לימוד יומי</span>
-            <span class="menu-badge">בקרוב</span>
+        <li class="menu-item">
+          <a href="rogem.html">
+            <svg class="menu-icon" aria-hidden="true"><use href="#i-rogem" /></svg>
+            <span class="menu-text">רוג'ום<span class="menu-subtext">אבני דרך</span></span>
           </a>
         </li>
         <li class="menu-item active">
@@ -168,6 +170,24 @@
       </p>
       <p class="aside">
         באנגלית היישומון נקרא <span lang="en" dir="ltr">Mil</span>.
+      </p>
+    </section>
+
+    <section class="prose" aria-labelledby="h-rogem">
+      <h2 id="h-rogem">רוג&rsquo;ום — אבני דרך</h2>
+      <p>
+        אבן המיל סימנה את הדרך, אבל היא לא האבן היחידה שעומדת לצידה.
+        <strong>רוג&rsquo;ום</strong> הוא ערימת אבנים שהולכי דרך מקימים, כל עובר ואבן אחת —
+        סימן שמישהו כבר עבר כאן, ושאפשר להוסיף עליו.
+      </p>
+      <p>
+        זו גם הצורה העתיקה ביותר של ציון: כשיעקב ולבן כרתו ברית, הם לא כתבו מסמך אלא
+        הקימו <strong>גַּל־עֵד</strong> — גל אבנים שיעיד. הערימה עצמה היא העדות.
+      </p>
+      <p>
+        <a href="rogem.html">עמוד רוג&rsquo;ום</a> בנוי באותו אופן: אוסף של רעיונות תורניים
+        קצרים, אחד בכל פעם, שנצברים לאורך הזמן. אפשר לגלול ביניהם קדימה ואחורה,
+        וכל רעיון נושא את התאריך העברי שבו נוסף.
       </p>
     </section>
 
