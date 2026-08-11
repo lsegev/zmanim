@@ -1205,9 +1205,14 @@ body {
 /* המכל הגולל. overflow-x מסתיר את סרגל הגלילה עצמו - הנקודות והחצים
    הם החיווי, וסרגל אופקי היה מפריע לעיצוב הכרטיס.
    המכל עצמו אינו flex: הרצועה שבתוכו היא ה-flex, ואילו המכל היה flex
-   הרצועה הייתה מתכווצת לרוחב המסך במקום להתארך לכל הכרטיסים. */
+   הרצועה הייתה מתכווצת לרוחב המסך במקום להתארך לכל הכרטיסים.
+
+   direction: ltr על ציר הגלילה בלבד: האוסף נקרא כמו ספר עברי - הרעיון
+   החדש ביותר משמאל, ומדפדפים ימינה כדי להתקדם אל הישנים. הטקסט בתוך
+   הכרטיס חוזר ל-rtl ב-.rogem-card. */
 .rogem-viewport {
     display: block;
+    direction: ltr;
     width: 100%;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
@@ -1241,6 +1246,8 @@ body {
     flex: 0 0 auto;
     width: min(100vw - 32px, 640px);
     box-sizing: border-box;
+    /* ציר הגלילה הוא ltr (ראה .rogem-viewport), אך תוכן הכרטיס עברי. */
+    direction: rtl;
     scroll-snap-align: center;
     scroll-snap-stop: always;
 
@@ -1294,8 +1301,12 @@ body {
     color: var(--accent);
 }
 
+/* ltr כמו ציר הגלילה: הכפתור השמאלי מוביל לחדש יותר והימני לישן יותר,
+   בהתאמה למיקום הכרטיסים עצמם. אותו דבר לנקודות המיקום, שאחרת היו
+   מסומנות בסדר הפוך מהכרטיס המוצג. */
 .rogem-controls {
     display: flex;
+    direction: ltr;
     align-items: center;
     justify-content: center;
     gap: 16px;

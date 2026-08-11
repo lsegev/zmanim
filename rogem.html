@@ -162,15 +162,15 @@
       <div class="rogem-track" id="rogem-track"></div>
     </div>
 
+    <!-- שורת הבקרה היא ltr כדי שסדר הכפתורים יתאים לסדר הכרטיסים: החדש
+         ביותר משמאל, והדפדוף ימינה מוביל אל הישנים. -->
     <div class="rogem-controls" id="rogem-controls" hidden>
-      <!-- ב-RTL הכרטיסים מסודרים מהחדש לישן משמאל לימין, ולכן החץ שמצביע
-           ימינה מוביל לרעיון הישן יותר (הבא ברשימה). -->
       <button class="icon-button rogem-nav" id="rogem-prev" type="button" aria-label="הרעיון החדש יותר">
-        <svg class="icon rogem-chevron-next" aria-hidden="true"><use href="#i-chevron" /></svg>
+        <svg class="icon" aria-hidden="true"><use href="#i-chevron" /></svg>
       </button>
       <div class="rogem-dots" id="rogem-dots"></div>
       <button class="icon-button rogem-nav" id="rogem-next" type="button" aria-label="הרעיון הישן יותר">
-        <svg class="icon" aria-hidden="true"><use href="#i-chevron" /></svg>
+        <svg class="icon rogem-chevron-next" aria-hidden="true"><use href="#i-chevron" /></svg>
       </button>
     </div>
 

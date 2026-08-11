@@ -265,13 +265,13 @@ function initNavigation() {
   document.getElementById('rogem-next')
     .addEventListener('click', () => goTo(state.index + 1));
 
-  // בעברית החץ שמצביע ימינה מוביל אל מה שקודם בסדר הקריאה - כלומר אל
-  // הרעיון החדש יותר, שיושב ראשון ברשימה.
+  // החצים עוקבים אחר המיקום הפיזי של הכרטיסים: החדש ביותר משמאל, ולכן
+  // חץ ימינה מתקדם אל הישנים וחץ שמאלה חוזר אל החדשים.
   document.addEventListener('keydown', event => {
     if (event.key === 'ArrowRight') {
-      goTo(state.index - 1);
-    } else if (event.key === 'ArrowLeft') {
       goTo(state.index + 1);
+    } else if (event.key === 'ArrowLeft') {
+      goTo(state.index - 1);
     }
   });
 
