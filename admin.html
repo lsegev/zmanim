@@ -29,7 +29,7 @@
     connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com;
     frame-src https://mil-time.firebaseapp.com https://accounts.google.com;
     base-uri 'none';
-    form-action 'none';
+    form-action 'self' https://accounts.google.com https://mil-time.firebaseapp.com;
     object-src 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
 
