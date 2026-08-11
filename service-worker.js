@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mil-v0.11.0';
+const CACHE_NAME = 'mil-v0.11.1';
 
 // נתיבים יחסיים בלבד: הם נפתרים מול scope של ה-Service Worker (למשל /zmanim/),
 // ולכן עובדים גם כשהאתר מתפרסם בתת-נתיב כמו GitHub Pages.
@@ -111,6 +111,16 @@ self.addEventListener('fetch', event => {
   // ואינן נשמרות במטמון - מדובר בנתוני מיקום.
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  // נתיבי העזר של Firebase Auth (/__/auth/… ו-/__/firebase/…) חייבים להגיע
+  // לרשת כמות שהם: זרימת ההתחברות מסתמכת על iframe ועל הפניות שמוגשות משם,
+  // וכל תיווך של ה-Service Worker שובר אותה - זה מה שגרם ל-auth/internal-error
+  // גם אחרי שה-CSP כבר תוקנה.
+  if (url.pathname.startsWith('/__/')) return;
+
+  // דף הניהול אינו נשמר במטמון: הוא צריך תמיד גרסה טרייה, ואין טעם
+  // להחזיק אותו אצל מבקרים רגילים.
+  if (url.pathname === '/admin.html') return;
 
   if (request.mode === 'navigate') {
     event.respondWith(handleNavigate(request));

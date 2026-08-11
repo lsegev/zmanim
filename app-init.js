@@ -33,6 +33,11 @@
 (function () {
   if (!('serviceWorker' in navigator)) return;
 
+  // דף הניהול אינו רושם Service Worker: זרימת ההתחברות של Google מסתמכת על
+  // נתיבי /__/auth/ ועל הפניות חוזרות, וכל תיווך ביניהם שובר אותה. הדף גם
+  // אינו נחוץ offline - הוא ממילא דורש חיבור לשרת כדי לשמור רעיון.
+  if (window.location.pathname === '/admin.html') return;
+
   // האם הדף כבר נשלט על ידי Service Worker בזמן הטעינה. אם לא, ה-controllerchange
   // הראשון נובע מ-clients.claim() של התקנה ראשונה - ואסור לרענן בגללו.
   const hadController = !!navigator.serviceWorker.controller;
