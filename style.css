@@ -1454,14 +1454,19 @@ body {
     color: var(--warn);
 }
 
+/* שורת המשתמש יושבת מעל הכרטיס. המייל וכפתור ההתנתקות מקובצים יחד בצד
+   ימין, בהתאמה ליישור של שאר הטופס - space-between היה מרחיק אותם לשני
+   קצוות המסך, והכפתור נראה כאילו נפלט מהכרטיס. */
 .admin-user {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
     font-size: 0.9rem;
     color: var(--muted);
-    padding: 0 4px;
+    /* מיישר את השורה עם הריפוד הפנימי של .prose (26px) שמתחתיה */
+    padding: 0 26px;
 }
 
 /* --- כפתורים --- */
@@ -1749,5 +1754,10 @@ body {
 
     .admin-actions .admin-button {
         flex: 1;
+    }
+
+    /* בנייד הריפוד של .prose קטן ל-18px, ושורת המשתמש מתיישרת אליו */
+    .admin-user {
+        padding: 0 18px;
     }
 }
