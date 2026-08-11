@@ -7,9 +7,9 @@
 // firestore.rules בשרת - גם מי שיערוך את הקוד הזה בדפדפן לא יצליח לכתוב.
 
 import {
-  initializeApp, getAuth, GoogleAuthProvider, signInWithPopup, signOut,
-  onAuthStateChanged, getFirestore, collection, doc, addDoc, updateDoc,
-  deleteDoc, getDocs, query, orderBy, serverTimestamp
+  initializeApp, getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
+  getRedirectResult, signOut, onAuthStateChanged, getFirestore, collection, doc,
+  addDoc, updateDoc, deleteDoc, getDocs, query, orderBy, serverTimestamp
 } from './vendor/firebase.js';
 
 const app = initializeApp(FIREBASE_CONFIG);
@@ -346,20 +346,37 @@ function showApp(email) {
   els.userEmail.textContent = email;
 }
 
+// חלון קופץ נחסם לעיתים קרובות בנייד - ובמיוחד ב-Safari ב-iOS, שם הוא
+// עלול להיכשל גם בלי שנפתח דבר. לכן כל כשל שאינו ביטול יזום של המשתמש
+// מוביל לניסיון חוזר בשיטת ההפניה (redirect), שעובדת בכל הדפדפנים.
+function signInFallbackToRedirect(error) {
+  const code = error && error.code ? error.code : '';
+
+  if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+    showGate('ההתחברות בוטלה.', true);
+    return;
+  }
+
+  els.gateStatus.textContent = 'מפנה להתחברות…';
+  signInWithRedirect(auth, new GoogleAuthProvider())
+    .catch(redirectError => {
+      const redirectCode = redirectError && redirectError.code ? redirectError.code : '';
+      showGate('ההתחברות נכשלה' + (redirectCode ? ` (${redirectCode})` : '') + '.', true);
+    });
+}
+
 function initAuth() {
+  // חזרה מהפניה: אם ההתחברות נעשתה ב-redirect, התוצאה ממתינה כאן בטעינה
+  // הבאה של הדף. onAuthStateChanged ירים ממילא את המשתמש, וכאן רק תופסים
+  // שגיאה כדי שלא תיבלע בשקט.
+  getRedirectResult(auth).catch(error => {
+    const code = error && error.code ? error.code : '';
+    if (code) showGate('ההתחברות נכשלה' + ` (${code})` + '.', true);
+  });
+
   document.getElementById('sign-in').addEventListener('click', () => {
     els.gateStatus.textContent = 'נפתח חלון התחברות…';
-    signInWithPopup(auth, new GoogleAuthProvider())
-      .catch(error => {
-        const code = error && error.code ? error.code : '';
-        if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-          showGate('ההתחברות בוטלה.', true);
-        } else if (code === 'auth/popup-blocked') {
-          showGate('הדפדפן חסם את חלון ההתחברות. יש לאפשר חלונות קופצים לאתר.', true);
-        } else {
-          showGate('ההתחברות נכשלה' + (code ? ` (${code})` : '') + '.', true);
-        }
-      });
+    signInWithPopup(auth, new GoogleAuthProvider()).catch(signInFallbackToRedirect);
   });
 
   const doSignOut = () => signOut(auth);
